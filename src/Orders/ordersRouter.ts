@@ -1,4 +1,4 @@
-import { ordersServise } from "./ordersServise";
+import { ordersService } from "./ordersService";
 import { validation } from "../common-files/middlewares/validation";
 import { addOrderSchema } from "./schemas/addOrderSchema";
 import { editOrderSchema } from "./schemas/editOrderSchema";
@@ -12,7 +12,7 @@ export const router = express.Router()
 router.post('/', validation(addOrderSchema), async (req, res) => {
     try{
         const { orderName, authorsId, country, city, price } = req.body as any
-        await ordersServise.addOrder(orderName, authorsId, country, city, price)
+        await ordersService.addOrder(orderName, authorsId, country, city, price)
         res.send('The order was added!')
     } catch(error) {
         console.log(error)
@@ -23,7 +23,7 @@ router.post('/', validation(addOrderSchema), async (req, res) => {
 router.patch('/', validation(editOrderSchema), async (req, res) => {
     try{
         const { orderId, orderName, country, city, price } = req.body as any
-        await ordersServise.editOrder(orderId, orderName, country, city, price) 
+        await ordersService.editOrder(orderId, orderName, country, city, price) 
         res.send('The order was successfully changed!')
     } catch(error) {
         console.log(error)
@@ -34,7 +34,7 @@ router.patch('/', validation(editOrderSchema), async (req, res) => {
 router.delete('/', validation(deleteOrderSchema), async (req, res) => {
     try{
         const { orderId } = req.body as any
-        await ordersServise.deleteOrder(orderId);
+        await ordersService.deleteOrder(orderId);
         res.send('The order was deleted!')
     } catch(error) {
         console.log(error)
@@ -44,7 +44,7 @@ router.delete('/', validation(deleteOrderSchema), async (req, res) => {
 
 router.get('/', async (req, res) => {
     try{
-        const orders = await ordersServise.getOrders();
+        const orders = await ordersService.getOrders();
         res.send(orders);
     } catch(error) {
         console.log(error)
@@ -55,7 +55,7 @@ router.get('/', async (req, res) => {
 router.get('/user-orders', validation(getUserOrdersSchema), async (req, res) => {
     try{
         const {userId } = req.body as any
-        const userOrders = await ordersServise.getUserOrders(userId)
+        const userOrders = await ordersService.getUserOrders(userId)
         res.send(userOrders)
     } catch(error) {
         console.log(error)

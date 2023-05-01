@@ -2,7 +2,7 @@ import { connect } from "../common-files/mysqlConnection";
 const mysql = require('mysql2/promise');
 import { v4 } from "uuid";
 
-class OrdersServise {
+class OrdersService {
     async addOrder(orderName: string, authorsId: string, country: string, city: string, price: number) {
         const connection = await connect;
         const date = new Date();
@@ -42,4 +42,4 @@ class OrdersServise {
     
 }
 
-export const ordersServise = new OrdersServise()
+export const ordersService = new OrdersService()
