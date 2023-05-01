@@ -1,4 +1,4 @@
-import { usersService } from "../Users/UsersService";
+import { usersService } from "../Users/usersService";
 import { validation } from "../common-files/middlewares/validation";
 import { registrationSchema } from "./schemas/registrationSchema";
 import { logInSchema } from "./schemas/logInSchema";
