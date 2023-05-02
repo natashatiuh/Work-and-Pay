@@ -2,7 +2,7 @@ const mysql = require('mysql2/promise');
 import { connect } from "../common-files/mysqlConnection";
 import { v4 } from 'uuid';
 
-class UsersService {
+class AuthorizationService {
     async registerUser(userName: string, yearOfBirth: number, country: string, city: string, password: string) {
         const connection = await connect;
         const date = new Date();
@@ -21,7 +21,7 @@ class UsersService {
     async logInUser(userName: string, password: string) {
         const connection = await connect;
         await connection.query(`SELECT * FROM users WHERE userName = ? AND password = ?`, 
-        [userName, password])
+        [userName, password]);
     }
 
     async deleteUser(userId: string, password: string) {
@@ -53,5 +53,5 @@ class UsersService {
     }
 }
 
-export const usersService = new UsersService()
+export const authorizationService = new AuthorizationService()
 
