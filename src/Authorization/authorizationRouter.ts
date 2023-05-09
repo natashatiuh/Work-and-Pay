@@ -29,7 +29,11 @@ router.get('/', validation(logInSchema), async (req, res) => {
     try{
         const {userName, password} = req.body as any
         const user = await authorizationService.logInUser(userName, password)
-        res.send(`The user '${userName}' was authorized successfully!`)
+        if (user === true) {
+            res.send(`The user '${userName}' was authorized successfully!`)
+        } else {
+            res.send(`The user does NOT exist!`)
+        }
     } catch(error) {
         console.log(error)
         res.send('Error!')

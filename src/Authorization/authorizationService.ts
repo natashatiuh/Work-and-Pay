@@ -20,8 +20,15 @@ class AuthorizationService {
 
     async logInUser(userName: string, password: string) {
         const connection = await connect;
-        await connection.query(`SELECT * FROM users WHERE userName = ? AND password = ?`, 
-        [userName, password]);
+        
+        const [maybeUser] = await connection.query(
+            `SELECT * FROM users WHERE userName = ? AND password = ?`, 
+            [userName, password]
+        )
+        console.log(maybeUser[0])
+        if (maybeUser[0]) return true
+        
+        return false
     }
 
     async deleteUser(userId: string, password: string) {
