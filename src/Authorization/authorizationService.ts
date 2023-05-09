@@ -36,8 +36,13 @@ class AuthorizationService {
 
     async deleteUser(userId: string, password: string) {
         const connection = await connect;
-        await connection.query(`DELETE FROM users WHERE id = ? AND password = ?`, 
+        const [rows] = await connection.query(`DELETE FROM users WHERE id = ? AND password = ?`, 
         [userId, password])
+        if(rows.affectedRows > 0) {
+            return true
+        } else {
+            return false
+        }
     }
 
     async editUser(userId: string, userName: string, yearOfBirth: number, country: string, city: string) {
@@ -50,10 +55,26 @@ class AuthorizationService {
             WHERE id = ?`, [userName, userAge, country, city, userId])
         }
 
+    async checkUser(userId: string) {
+        const connection = await connect;
+        const [users] = await connection.query(`SELECT * FROM users WHERE id = ?`, [userId])
+        if(users[0]) {
+            return true
+        } else {
+            return false
+        }
+    }
+
     async changePassword(oldPassword: string, newPassword: string) {
         const connection = await connect;
-        await connection.query(`UPDATE users SET password = ? WHERE password = ?`,
+        const [rows] = await connection.query(`UPDATE users SET password = ? WHERE password = ?`,
         [newPassword, oldPassword])
+        console.log(rows)
+        if(rows.affectedRows > 0) {
+            return true
+        } else {
+            return false
+        }
     }
 
     async getUsers() {

@@ -6,7 +6,6 @@ import { deleteUserSchema } from "./schemas/deleteUserSchema";
 import { editUserSchema } from "./schemas/editUserSchema";
 import { changePasswordSchema } from "./schemas/changePasswordSchema";
 import { auth } from "../common-files/middlewares/authorization";
-import { tokenToString } from "typescript";
 
 const express = require('express');
 
@@ -42,21 +41,26 @@ router.get('/', validation(logInSchema), async (req, res) => {
     }
 } )
 
-router.delete('/', validation(deleteUserSchema), async (req, res) => {
+router.delete('/', auth(), validation(deleteUserSchema), async (req, res) => {
     try{
-        const { userId, password } = req.body as any
-        await authorizationService.deleteUser(userId, password)
-        res.send(`The user was deleted!`);
+        const { password } = req.body as any
+        const user = await authorizationService.deleteUser(req.userId, password)
+        if(user === true) {
+            res.send(`The user was deleted!`);
+        } else {
+            res.send(`The user does NOT exist!`);
+        }
+        
     } catch(error) {
         console.log(error)
         res.send('Error!') 
     }
 })
 
-router.patch('/', validation(editUserSchema), async (req, res) => {
+router.patch('/', auth(), validation(editUserSchema), async (req, res) => {
     try{
-        const {userId, userName, yearOfBirth, country, city} = req.body as any
-        await authorizationService.editUser(userId, userName, yearOfBirth, country, city)
+        const {userName, yearOfBirth, country, city} = req.body as any
+        await authorizationService.editUser(req.userId, userName, yearOfBirth, country, city)
         res.send(`The information about the user ${userName} was changed!`)
     } catch(error) {
         console.log(error)
@@ -64,11 +68,23 @@ router.patch('/', validation(editUserSchema), async (req, res) => {
     }
 })
 
-router.patch('/password', validation(changePasswordSchema), async (req, res) => {
+router.patch('/password', auth(), validation(changePasswordSchema), async (req, res) => {
     try{
         const {oldPassword, newPassword} = req.body as any
-        await authorizationService.changePassword(oldPassword, newPassword)
-        res.send('Your password was changed!')
+        const isTrueUser = await authorizationService.checkUser(req.userId)
+        if(isTrueUser) {
+            const password = await authorizationService.changePassword(oldPassword, newPassword)
+
+            if(password === true) {
+                res.send('Your password was changed!')
+            } else {
+                res.send('Your old password is NOT correct!')
+            }
+
+        } else {
+            res.send('You are NOT the true user!')
+        }
+        
     } catch(error) {
         console.log(error)
         res.send('Error!')
