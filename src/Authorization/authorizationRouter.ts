@@ -1,4 +1,4 @@
-import { authorizationService } from "./AuthorizationService";
+import { authorizationService } from "./authorizationService";
 import { validation } from "../common-files/middlewares/validation";
 import { registrationSchema } from "./schemas/registrationSchema";
 import { logInSchema } from "./schemas/logInSchema";
