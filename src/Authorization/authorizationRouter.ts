@@ -5,6 +5,8 @@ import { logInSchema } from "./schemas/logInSchema";
 import { deleteUserSchema } from "./schemas/deleteUserSchema";
 import { editUserSchema } from "./schemas/editUserSchema";
 import { changePasswordSchema } from "./schemas/changePasswordSchema";
+import { auth } from "../common-files/middlewares/authorization";
+import { tokenToString } from "typescript";
 
 const express = require('express');
 
@@ -28,9 +30,9 @@ router.post('/', validation(registrationSchema), async (req, res) => {
 router.get('/', validation(logInSchema), async (req, res) => {
     try{
         const {userName, password} = req.body as any
-        const user = await authorizationService.logInUser(userName, password)
-        if (user === true) {
-            res.send(`The user '${userName}' was authorized successfully!`)
+        const token = await authorizationService.logInUser(userName, password)
+        if (token) {
+            res.send(`The user '${userName}' was authorized successfully! Token is ${token}`)
         } else {
             res.send(`The user does NOT exist!`)
         }

@@ -4,15 +4,16 @@ import { addOrderSchema } from "./schemas/addOrderSchema";
 import { editOrderSchema } from "./schemas/editOrderSchema";
 import { deleteOrderSchema } from "./schemas/deleteOrderSchema";
 import { getUserOrdersSchema } from "./schemas/getUserOrdersSchema";
+import { auth } from "../common-files/middlewares/authorization";
 
 const express = require('express')
 
 export const router = express.Router()
 
-router.post('/', validation(addOrderSchema), async (req, res) => {
+router.post('/', auth(), validation(addOrderSchema), async (req, res) => {
     try{
-        const { orderName, authorsId, country, city, price } = req.body as any
-        await ordersService.addOrder(orderName, authorsId, country, city, price)
+        const { orderName, country, city, price } = req.body as any
+        await ordersService.addOrder(orderName, req.userId, country, city, price)
         res.send('The order was added!')
     } catch(error) {
         console.log(error)
@@ -20,11 +21,17 @@ router.post('/', validation(addOrderSchema), async (req, res) => {
     }
 })
 
-router.patch('/', validation(editOrderSchema), async (req, res) => {
+router.patch('/', auth(), validation(editOrderSchema), async (req, res) => {
     try{
         const { orderId, orderName, country, city, price } = req.body as any
-        await ordersService.editOrder(orderId, orderName, country, city, price) 
-        res.send('The order was successfully changed!')
+        const isTrueOrder = await ordersService.checkUsersOrder(orderId, req.userId)
+        console.log(isTrueOrder)
+        if(isTrueOrder) {
+            await ordersService.editOrder(orderId, orderName, country, city, price) 
+            res.send('The order was successfully changed!')
+        } else {
+            res.send('It is NOT your order!')
+        }
     } catch(error) {
         console.log(error)
         res.send(error)

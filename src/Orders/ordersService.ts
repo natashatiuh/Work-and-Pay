@@ -16,6 +16,17 @@ class OrdersService {
         [v4(), orderName, authorsId, dateOfPublishing, country, city, price]);   
     }
 
+    async checkUsersOrder(orderId: string, userId: string) {
+        const connection = await connect;
+        const [orders] = await connection.query(`SELECT * FROM orders WHERE id = ? AND authorsId = ?`,
+        [orderId, userId])
+        if(orders[0]) {
+            return true
+        } else {
+            return false
+        }
+    }
+
     async editOrder(orderId: string, orderName: string, country: string, city: string, price: number) {
         const connection = await connect;
         await connection.query(`UPDATE orders SET orderName = ?, country = ?, city = ?, price = ? 
