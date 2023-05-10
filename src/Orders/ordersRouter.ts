@@ -3,7 +3,6 @@ import { validation } from "../common-files/middlewares/validation";
 import { addOrderSchema } from "./schemas/addOrderSchema";
 import { editOrderSchema } from "./schemas/editOrderSchema";
 import { deleteOrderSchema } from "./schemas/deleteOrderSchema";
-import { getUserOrdersSchema } from "./schemas/getUserOrdersSchema";
 import { auth } from "../common-files/middlewares/authorization";
 
 const express = require('express')
@@ -38,11 +37,16 @@ router.patch('/', auth(), validation(editOrderSchema), async (req, res) => {
     }
 })
 
-router.delete('/', validation(deleteOrderSchema), async (req, res) => {
+router.delete('/', auth(), validation(deleteOrderSchema), async (req, res) => {
     try{
         const { orderId } = req.body as any
-        await ordersService.deleteOrder(orderId);
-        res.send('The order was deleted!')
+        const order = await ordersService.checkUsersOrder(orderId, req.userId)
+        if(order === true) {
+            await ordersService.deleteOrder(orderId);
+            res.send('The order was deleted!')
+        } else {
+            res.send('The order does NOT exist!')
+        }    
     } catch(error) {
         console.log(error)
         res.send(error)
@@ -59,10 +63,9 @@ router.get('/', async (req, res) => {
     }
 })
 
-router.get('/user-orders', validation(getUserOrdersSchema), async (req, res) => {
+router.get('/user-orders', auth(), async (req, res) => {
     try{
-        const {userId } = req.body as any
-        const userOrders = await ordersService.getUserOrders(userId)
+        const userOrders = await ordersService.getUserOrders(req.userId)
         res.send(userOrders)
     } catch(error) {
         console.log(error)
