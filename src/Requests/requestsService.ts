@@ -16,17 +16,44 @@ class RequestsService {
         }
     }
 
-    async sendRequest(orderId: string, executorId: string) {
+    async checkOrderAuthor(orderId: string, executorId: string) {
         const connection = await connect;
-        const [rows] = await connection.query(`INSERT INTO requests (id, orderId, executorId, status) 
-        VALUES (?, ?, ?, ?)`, 
-        [v4(), orderId, executorId, "PENDING"]);
-        if(rows[0]) {
+        const [isNotAuthor] = await connection.query(`SELECT orders.id, orders.authorsId, requests.id, requests.executorId
+        FROM orders
+        INNER JOIN requests 
+        ON orders.id = requests.orderId 
+        WHERE orders.id = ? AND requests.executorId = ? AND orders.authorsId <> requests.executorId`, 
+        [orderId, executorId])
+        console.log(isNotAuthor)
+        if(isNotAuthor[0]) {
             return true
         } else {
             return false
         }
     }
+
+    async sendRequest(orderId: string, executorId: string) {
+        const connection = await connect;
+        const [orders] = await connection.query(`SELECT authorsId FROM orders WHERE id = ?`, [orderId])
+        const order = orders[0]
+
+        console.log(order)
+        console.log(executorId)
+        if (order.authorsId === executorId) {
+            return false
+        }
+        
+        const [rows] = await connection.query(`INSERT INTO requests (id, orderId, executorId, status) 
+        VALUES (?, ?, ?, ?)`, 
+        [v4(), orderId, executorId, "PENDING"]);
+        console.log(rows);
+        if(rows.affectedRows > 0) {
+            return true
+        } else {
+            return false
+        }
+    }
+
 
     async checkUserRequest(requestId: string, userId: string) {
         const connection = await connect;

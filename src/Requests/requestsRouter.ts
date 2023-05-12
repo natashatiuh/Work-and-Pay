@@ -17,8 +17,13 @@ router.post('/', auth(), validation(sendRequestSchema), async (req, res) => {
       const { orderId } = req.body as any;
       const isTrueOrder = await requestsService.checkOrder(orderId)
       if (isTrueOrder === true) {
-        await requestsService.sendRequest(orderId, req.userId);
-        res.send('The request was sent!')
+        let didSendRequest = await requestsService.sendRequest(orderId, req.userId);
+        if (didSendRequest === true) {
+            res.send('The request was sent!') 
+        } else {
+            res.send('The request was NOT sent!') 
+        }
+        
       } else {
         res.send('The order does NOT exist!')
       }
