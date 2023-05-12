@@ -42,6 +42,14 @@ class RequestsService {
         if (order.authorsId === executorId) {
             return false
         }
+
+        const [requests] = await connection.query(`SELECT executorId FROM requests 
+        WHERE executorId = ? AND orderId = ?`,
+        [executorId, orderId])
+        console.log(requests)
+        if(requests.length > 0) {
+            return false
+        } 
         
         const [rows] = await connection.query(`INSERT INTO requests (id, orderId, executorId, status) 
         VALUES (?, ?, ?, ?)`, 
@@ -86,9 +94,12 @@ class RequestsService {
         await connection.query(`DELETE FROM requests WHERE id = ?`, [requestId])
     }
 
-    async getOrderRequests(orderId: string) {
+    async getOrderRequests(orderId: string, userId: string) {
         const connection = await connect;
-        const [rows] = await connection.query(`SELECT * FROM requests WHERE orderId = ?`, [orderId])
+        const [rows] = await connection.query(`SELECT orders.id AS orderId, orders.orderName, requests.id AS requestId, requests.executorId, requests.status 
+        FROM orders 
+        INNER JOIN requests ON orders.id = requests.orderId 
+        WHERE orders.id = ? AND orders.authorsId = ?`, [orderId, userId])
         console.log(rows)
         return rows;
     }

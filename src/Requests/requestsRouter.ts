@@ -90,7 +90,7 @@ router.get('/order', auth(),  validation(getOrderRequestsSchema), async (req, re
         const { orderId } = req.body as any;
         const isTrueOrder = await requestsService.checkOrder(orderId)
         if(isTrueOrder === true) {
-            const orderRequests = await requestsService.getOrderRequests(orderId);
+            const orderRequests = await requestsService.getOrderRequests(orderId, req.userId);
             res.send(orderRequests)
         } else {
             res.send('This order does NOT have any requests!')
