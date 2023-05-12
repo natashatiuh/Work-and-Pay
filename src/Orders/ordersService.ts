@@ -6,15 +6,15 @@ class OrdersService {
     async addOrder(orderName: string, authorsId: string, country: string, city: string, price: number) {
         const connection = await connect;
         const date = new Date();
-        let day = date.getDate();
-        let month = date.getMonth() + 1;
-        let year = date.getFullYear();
-        const dateOfPublishing = `${year}-${month}-${day}`;
+        const dateOfPublishing = date.getFullYear()+'-'+(date.getMonth()+1)+'-'+date.getDate();
+        const timeOfPublishing = date.getHours() + ":" + date.getMinutes() + ":" + date.getSeconds();
+        const dateTime = dateOfPublishing+ ' ' +timeOfPublishing
         await connection.query(`INSERT INTO orders 
         (id, orderName, authorsId, dateOfPublishing, country, city, price, state) 
         VALUES (?, ?, ?, ?, ?, ?, ?, 'Active')`, 
-        [v4(), orderName, authorsId, dateOfPublishing, country, city, price]);   
+        [v4(), orderName, authorsId, dateTime, country, city, price]);   
     }
+
 
     async checkUsersOrder(orderId: string, userId: string) {
         const connection = await connect;
@@ -40,13 +40,14 @@ class OrdersService {
 
     async getOrders() {
         const connection = await connect;
-        const [rows] = await connection.query(`SELECT * FROM orders`)
+        const [rows] = await connection.query(`SELECT * FROM orders ORDER BY dateOfPublishing DESC`)
         return rows;
     }
 
     async getUserOrders(userId: string) {
         const connection = await connect;
-        const [rows] = await connection.query(`SELECT * FROM orders WHERE authorsId = ?`,
+        const [rows] = await connection.query(`SELECT * FROM orders WHERE authorsId = ?
+        ORDER BY dateOfPublishing DESC`,
         [userId])
         return rows;
     }
