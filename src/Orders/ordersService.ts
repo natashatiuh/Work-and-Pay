@@ -9,6 +9,7 @@ class OrdersService {
         const dateOfPublishing = date.getFullYear()+'-'+(date.getMonth()+1)+'-'+date.getDate();
         const timeOfPublishing = date.getHours() + ":" + date.getMinutes() + ":" + date.getSeconds();
         const dateTime = dateOfPublishing+ ' ' +timeOfPublishing
+        
         await connection.query(`INSERT INTO orders 
         (id, orderName, authorsId, dateOfPublishing, country, city, price, state) 
         VALUES (?, ?, ?, ?, ?, ?, ?, 'Active')`, 

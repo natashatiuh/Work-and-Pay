@@ -1,4 +1,3 @@
-import Connection from "mysql2/typings/mysql/lib/Connection";
 import { connect } from "../common-files/mysqlConnection";
 const mysql = require('mysql2/promise');
 import { v4 } from 'uuid';
@@ -34,6 +33,11 @@ class RequestsService {
 
     async sendRequest(orderId: string, executorId: string) {
         const connection = await connect;
+        const date = new Date();
+        const dateOfPublishing = date.getFullYear()+'-'+(date.getMonth()+1)+'-'+date.getDate();
+        const timeOfPublishing = date.getHours() + ":" + date.getMinutes() + ":" + date.getSeconds();
+        const dateTime = dateOfPublishing+ ' ' +timeOfPublishing
+
         const [orders] = await connection.query(`SELECT authorsId FROM orders WHERE id = ?`, [orderId])
         const order = orders[0]
 
@@ -51,9 +55,9 @@ class RequestsService {
             return false
         } 
         
-        const [rows] = await connection.query(`INSERT INTO requests (id, orderId, executorId, status) 
-        VALUES (?, ?, ?, ?)`, 
-        [v4(), orderId, executorId, "PENDING"]);
+        const [rows] = await connection.query(`INSERT INTO requests (id, orderId, executorId, status, date) 
+        VALUES (?, ?, ?, ?, ?)`, 
+        [v4(), orderId, executorId, "PENDING", dateTime]);
         console.log(rows);
         if(rows.affectedRows > 0) {
             return true
