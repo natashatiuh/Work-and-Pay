@@ -103,7 +103,8 @@ class RequestsService {
         const [rows] = await connection.query(`SELECT orders.id AS orderId, orders.orderName, requests.id AS requestId, requests.executorId, requests.status 
         FROM orders 
         INNER JOIN requests ON orders.id = requests.orderId 
-        WHERE orders.id = ? AND orders.authorsId = ?`, [orderId, userId])
+        WHERE orders.id = ? AND orders.authorsId = ?
+        ORDER BY date DESC`, [orderId, userId])
         console.log(rows)
         return rows;
     }
@@ -114,7 +115,8 @@ class RequestsService {
         SELECT orders.id AS orderId, orders.orderName, requests.id AS requestId, requests.executorId, requests.status 
         FROM orders 
         INNER JOIN requests ON orders.id = requests.orderId 
-        WHERE orders.authorsId = ? AND requests.status = "ACCEPTED";`, [userId])
+        WHERE orders.authorsId = ? AND requests.status = "ACCEPTED"
+        ORDER BY date DESC`, [userId])
         return rows;
     }
 
@@ -124,7 +126,8 @@ class RequestsService {
         SELECT orders.id AS ordersId, orders.orderName, requests.id AS requestId, requests.executorId, requests.status
         FROM orders 
         INNER JOIN requests ON orders.id = requests.orderId 
-        WHERE orders.authorsId = ? AND status = "DECLINED"`, [userId])
+        WHERE orders.authorsId = ? AND status = "DECLINED"
+        ORDER BY date DESC`, [userId])
         return rows;
     }
 
@@ -134,7 +137,8 @@ class RequestsService {
         SELECT orders.id AS orderId, orders.orderName, requests.id AS requestId, requests.executorId, requests.status 
         FROM orders 
         INNER JOIN requests ON orders.id = requests.orderId 
-        WHERE orders.authorsId = ? AND status = "PENDING"`, [userId])
+        WHERE orders.authorsId = ? AND status = "PENDING"
+        ORDER BY date DESC`, [userId])
         return rows;
     }
 
@@ -144,7 +148,8 @@ class RequestsService {
         SELECT orders.id AS orderId, orders.orderName, requests.id AS requestId, requests.executorId, requests.status
         FROM orders
         INNER JOIN requests ON orders.id = requests.orderId
-        WHERE orders.authorsId = ?`, [userId])
+        WHERE orders.authorsId = ?
+        ORDER BY date DESC`, [userId])
         return rows;
     }
 }

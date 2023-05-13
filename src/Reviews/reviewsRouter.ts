@@ -3,16 +3,22 @@ import { addReviewSchema } from "./schemas/addReviewSchema";
 import { deleteReviewSchema } from "./schemas/deleteReviewSchema";
 import { getUserReviewsSchema } from "./schemas/getUserReviews";
 import { validation } from "../common-files/middlewares/validation";
+import { auth } from "../common-files/middlewares/authorization";
 
 const express = require('express');
 
 export const router = express.Router();
 
-router.post('/', validation(addReviewSchema), async (req, res) => {
+router.post('/', auth(), validation(addReviewSchema), async (req, res) => {
     try{
-        const { userId, mark, comment } = req.body as any
-        await reviewsService.addReview(userId, mark, comment)
-        res.send('The review was added!')
+        const { orderId, executorId, mark, comment } = req.body as any
+        const review = await reviewsService.addReview(req.userId, orderId, executorId, mark, comment)
+        if(review) {
+            res.send('The review was added!')
+        } else {
+            res.send('The review was NOT sent!')
+        } 
+        
     } catch(error) {
         console.log(error)
         res.send(error)
