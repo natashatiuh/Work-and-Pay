@@ -39,8 +39,13 @@ router.patch('/', auth(), validation(acceptRequestSchema), async (req, res) => {
         const { requestId } = req.body as any;
         const isTrueRequest = await requestsService.checkUserRequest(requestId, req.userId)
         if (isTrueRequest === true) {
-           await requestsService.acceptRequest(requestId)
-           res.send(`The request was accepted!`)
+           const request = await requestsService.acceptRequest(requestId)
+           if(request) {
+            res.send(`The request was accepted!`)
+           } else {
+            res.send(`The request is NOT available anymore!`)
+           }
+           
         } else {
             res.send(`The request does NOT exist!`)
         }
