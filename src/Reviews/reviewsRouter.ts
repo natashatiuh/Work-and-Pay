@@ -2,7 +2,6 @@ import { reviewsService } from "./reviewsService";
 import { addReviewToExecutorSchema } from "./schemas/addReviewToExecutorSchema"; 
 import { deleteAuthorsReviewSchema } from "./schemas/deleteAuthorsReviewSchema";
 import { deleteExecutorsReviewSchema } from "./schemas/deleteExecutorReviewSchema";
-import { getUserReviewsSchema } from "./schemas/getUserReviews";
 import { addReviewToAuthorSchema } from "./schemas/addReviewToAuthorSchema";
 import { validation } from "../common-files/middlewares/validation";
 import { auth } from "../common-files/middlewares/authorization";
@@ -88,10 +87,9 @@ router.get('/', async (req, res) => {
     }
 })
 
-router.get('/user-reviews', validation(getUserReviewsSchema), async (req, res) => {
+router.get('/user-reviews', auth(), async (req, res) => {
     try{
-        const { userId } = req.body as any
-        const userReviews = await reviewsService.getUserReviews(userId);
+        const userReviews = await reviewsService.getUserReviews(req.userId);
         res.send(userReviews)
     } catch(error) {
         console.log(error)

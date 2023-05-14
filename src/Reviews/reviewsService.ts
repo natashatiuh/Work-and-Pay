@@ -110,13 +110,14 @@ class ReviewsService {
 
     async getReviews() {
         const connection = await connect;
-        const [rows] = await connection.query(`SELECT * FROM reviews`)
+        const [rows] = await connection.query(`SELECT * FROM reviews ORDER BY date DESC`)
         return rows;
     }
 
     async getUserReviews(userId: string) {
         const conection = await connect;
-        const [rows] = await conection.query(`SELECT * FROM reviews WHERE userId = ?`, [userId])
+        const [rows] = await conection.query(`SELECT * FROM reviews WHERE recipientId = ? ORDER BY date DESC`, 
+        [userId])
         return rows;
     }
 }
