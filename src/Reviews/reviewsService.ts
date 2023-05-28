@@ -1,4 +1,4 @@
-import { connection } from "../common-files/mysqlConnection";
+import { connection, reviewRepository } from "../common-files/mysqlConnection";
 const mysql = require('mysql2/promise');
 import { v4 } from "uuid";
 
@@ -114,19 +114,14 @@ class ReviewsService {
     }
 
     async getReviews() {
-        const [rows] = await connection.query(`
-        SELECT * FROM reviews ORDER BY date DESC
-        `)
-        return rows;
+        return await reviewRepository.find()
     }
 
     async getUserReviews(userId: string) {
-        const [rows] = await connection.query(`
-        SELECT * FROM reviews 
-        WHERE recipientId = ? 
-        ORDER BY date DESC`, 
-        [userId])
-        return rows;
+        return await reviewRepository.find({
+            where: { recipientId: userId },
+            order: { date: 'DESC' }
+        })
     }
 }
 

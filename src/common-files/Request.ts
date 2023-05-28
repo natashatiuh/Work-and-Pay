@@ -1,9 +1,9 @@
-import { Column, Entity } from 'typeorm';
+import { Column, Entity, PrimaryColumn } from 'typeorm';
 
 
-@Entity()
+@Entity({ name: 'requests' })
 export class Request {
-    @Column()
+    @PrimaryColumn()
     id: string;
 
     @Column()

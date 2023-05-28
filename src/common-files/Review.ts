@@ -1,9 +1,9 @@
-import { Column, Entity } from 'typeorm';
+import { Column, Entity, PrimaryColumn } from 'typeorm';
 
 
-@Entity()
+@Entity({ name: 'reviews' })
 export class Review {
-    @Column()
+    @PrimaryColumn()
     id: string;
 
     @Column()
