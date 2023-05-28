@@ -3,7 +3,9 @@
       "module": "CommonJS",
       "esModuleInterop": true,
       "target": "es6",
-      "sourceMap": true
+      "sourceMap": true,
+      "emitDecoratorMetadata": true,
+      "experimentalDecorators": true
     },
     "include": ["src/**/*"],
     "exclude": [
