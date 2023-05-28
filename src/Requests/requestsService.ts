@@ -1,11 +1,12 @@
-import { connect } from "../common-files/mysqlConnection";
+import { connection } from "../common-files/mysqlConnection";
 const mysql = require('mysql2/promise');
 import { v4 } from 'uuid';
 
 class RequestsService {
     async checkOrder(orderId: string) {
-        const connection = await connect;
-        const [rows] = await connection.query(`SELECT * FROM orders WHERE id = ?`, 
+        const [rows] = await connection.query(`
+        SELECT * FROM orders 
+        WHERE id = ?`, 
         [orderId]);
         console.log(rows)
         if(rows[0]) {
@@ -16,8 +17,8 @@ class RequestsService {
     }
 
     async checkOrderAuthor(orderId: string, executorId: string) {
-        const connection = await connect;
-        const [isNotAuthor] = await connection.query(`SELECT orders.id, orders.authorsId, requests.id, requests.executorId
+        const [isNotAuthor] = await connection.query(`
+        SELECT orders.id, orders.authorsId, requests.id, requests.executorId
         FROM orders
         INNER JOIN requests 
         ON orders.id = requests.orderId 
@@ -32,13 +33,15 @@ class RequestsService {
     }
 
     async sendRequest(orderId: string, executorId: string) {
-        const connection = await connect;
         const date = new Date();
         const dateOfPublishing = date.getFullYear()+'-'+(date.getMonth()+1)+'-'+date.getDate();
         const timeOfPublishing = date.getHours() + ":" + date.getMinutes() + ":" + date.getSeconds();
         const dateTime = dateOfPublishing+ ' ' +timeOfPublishing
 
-        const [orders] = await connection.query(`SELECT authorsId FROM orders WHERE id = ?`, [orderId])
+        const [orders] = await connection.query(`
+        SELECT authorsId FROM orders 
+        WHERE id = ?`, 
+        [orderId])
         const order = orders[0]
 
         console.log(order)
@@ -47,7 +50,8 @@ class RequestsService {
             return false
         }
 
-        const [requests] = await connection.query(`SELECT executorId FROM requests 
+        const [requests] = await connection.query(`
+        SELECT executorId FROM requests 
         WHERE executorId = ? AND orderId = ?`,
         [executorId, orderId])
         console.log(requests)
@@ -55,7 +59,8 @@ class RequestsService {
             return false
         } 
         
-        const [rows] = await connection.query(`INSERT INTO requests (id, orderId, executorId, status, date) 
+        const [rows] = await connection.query(`
+        INSERT INTO requests (id, orderId, executorId, status, date) 
         VALUES (?, ?, ?, ?, ?)`, 
         [v4(), orderId, executorId, "PENDING", dateTime]);
         console.log(rows);
@@ -68,7 +73,6 @@ class RequestsService {
 
 
     async checkUserRequest(requestId: string, userId: string) {
-        const connection = await connect;
         const [rows] = await connection.query(`
         SELECT orders.authorsId, requests.id AS requestId FROM orders
         INNER JOIN requests ON orders.id = requests.orderId
@@ -82,8 +86,9 @@ class RequestsService {
     }
 
     async acceptRequest(requestId: string) {
-        const connection = await connect;
-        const [rows] = await connection.query(`UPDATE requests SET status = "ACCEPTED"
+        const [rows] = await connection.query(`
+        UPDATE requests 
+        SET status = "ACCEPTED"
         WHERE id = ? AND status = "PENDING" OR status = "DECLINED"`, [requestId])
         if(rows.affectedRows > 0) {
             return true
@@ -93,19 +98,22 @@ class RequestsService {
     }
 
     async declineRequest(requestId: string) {
-        const connection = await connect;
-        await connection.query(`UPDATE requests SET status = "DECLINED"
+        await connection.query(`
+        UPDATE requests 
+        SET status = "DECLINED"
         WHERE id = ?`, [requestId])
     }
 
     async cancelRequest(requestId: string) {
-        const connection = await connect;
-        await connection.query(`DELETE FROM requests WHERE id = ?`, [requestId])
+        await connection.query(`
+        DELETE FROM requests 
+        WHERE id = ?`, 
+        [requestId])
     }
 
     async getOrderRequests(orderId: string, userId: string) {
-        const connection = await connect;
-        const [rows] = await connection.query(`SELECT orders.id AS orderId, orders.orderName, requests.id AS requestId, requests.executorId, requests.status 
+        const [rows] = await connection.query(`
+        SELECT orders.id AS orderId, orders.orderName, requests.id AS requestId, requests.executorId, requests.status 
         FROM orders 
         INNER JOIN requests ON orders.id = requests.orderId 
         WHERE orders.id = ? AND orders.authorsId = ?
@@ -115,7 +123,6 @@ class RequestsService {
     }
 
     async getAcceptedRequests(userId: string) {
-        const connection = await connect;
         const [rows] = await connection.query(`
         SELECT orders.id AS orderId, orders.orderName, requests.id AS requestId, requests.executorId, requests.status 
         FROM orders 
@@ -126,7 +133,6 @@ class RequestsService {
     }
 
     async getDeclinedRequests(userId: string) {
-        const connection = await connect;
         const [rows] = await connection.query(`
         SELECT orders.id AS ordersId, orders.orderName, requests.id AS requestId, requests.executorId, requests.status
         FROM orders 
@@ -137,7 +143,6 @@ class RequestsService {
     }
 
     async getPendingRequests(userId: string) {
-        const connection = await connect;
         const [rows] = await connection.query(`
         SELECT orders.id AS orderId, orders.orderName, requests.id AS requestId, requests.executorId, requests.status 
         FROM orders 
@@ -148,7 +153,6 @@ class RequestsService {
     }
 
     async getUserRequests(userId: string) {
-        const connection = await connect;
         const [rows] = await connection.query(`
         SELECT orders.id AS orderId, orders.orderName, requests.id AS requestId, requests.executorId, requests.status
         FROM orders

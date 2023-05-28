@@ -1,8 +1,12 @@
-const mysql = require('mysql2/promise');
+import {createConnection} from 'mysql2/promise'
 
-export const connect = mysql.createConnection({
+export let connection
+
+createConnection({
     host: 'localhost',
     user: 'root',
     database: 'kabanchik',
     password: 'root'
+}).then(newConnection => {
+    connection = newConnection
 })

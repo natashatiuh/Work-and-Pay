@@ -1,10 +1,9 @@
-import { connect } from "../common-files/mysqlConnection";
+import { connection } from "../common-files/mysqlConnection";
 const mysql = require('mysql2/promise');
 import { v4 } from "uuid";
 
 class ReviewsService {
     async addReviewToExecutor(userId: string, orderId: string, executorId: string, mark: number, comment: string) {
-        const connection = await connect;
         const date = new Date();
         const dateOfPublishing = date.getFullYear()+'-'+(date.getMonth()+1)+'-'+date.getDate();
         const timeOfPublishing = date.getHours() + ":" + date.getMinutes() + ":" + date.getSeconds();
@@ -19,13 +18,17 @@ class ReviewsService {
         [orderId, executorId, userId])
         if(!orders[0]) return false
 
-        const [reviews] = await connection.query(`SELECT * FROM reviews 
-        WHERE orderId = ? AND recipientId = ?`, [orderId, executorId])
+        const [reviews] = await connection.query(`
+        SELECT * FROM reviews 
+        WHERE orderId = ? AND recipientId = ?`, 
+        [orderId, executorId])
         if(reviews.length > 0) {
             return false
         }
 
-        const [rows] = await connection.query(`INSERT INTO reviews (id, orderId, recipientId, mark, comment, date) VALUES (?, ?, ?, ?, ?, ?)`,
+        const [rows] = await connection.query(`
+        INSERT INTO reviews (id, orderId, recipientId, mark, comment, date) 
+        VALUES (?, ?, ?, ?, ?, ?)`,
         [v4(), orderId, executorId, mark, comment, dateTime])
         if(rows.affectedRows > 0) {
             return true
@@ -35,7 +38,6 @@ class ReviewsService {
     }
 
     async addReviewToAuthor(userId: string, orderId: string, authorsId: string, mark: number, comment: string) {
-        const connection = await connect;
         const date = new Date();
         const dateOfPublishing = date.getFullYear()+'-'+(date.getMonth()+1)+'-'+date.getDate();
         const timeOfPublishing = date.getHours() + ":" + date.getMinutes() + ":" + date.getSeconds();
@@ -51,13 +53,16 @@ class ReviewsService {
         console.log(orders[0])
         if(!orders[0]) return false
 
-        const [reviews] = await connection.query(`SELECT * FROM reviews 
+        const [reviews] = await connection.query(`
+        SELECT * FROM reviews 
         WHERE orderId = ? AND recipientId = ?`, [orderId, authorsId])
         if(reviews.length > 0) {
             return false
         }
 
-        const [rows] = await connection.query(`INSERT INTO reviews (id, orderId, recipientId, mark, comment, date) VALUES (?, ?, ?, ?, ?, ?)`,
+        const [rows] = await connection.query(`
+        INSERT INTO reviews (id, orderId, recipientId, mark, comment, date) 
+        VALUES (?, ?, ?, ?, ?, ?)`,
         [v4(), orderId, authorsId, mark, comment, dateTime])
         if(rows.affectedRows > 0) {
             return true
@@ -68,8 +73,6 @@ class ReviewsService {
 
     //If you are the author of the order and you want to delete the review, which you sent to the order executor, you can use this method
     async deleteAuthorsReview(reviewId: string, authorId: string) { 
-        const connection = await connect;
-
         const [review] = await connection.query(`
         SELECT orders.id, orders.authorsId, reviews.id
         FROM orders
@@ -79,7 +82,9 @@ class ReviewsService {
         [authorId, reviewId])
         if(!review[0]) return false
 
-        const [rows] = await connection.query(`DELETE FROM reviews WHERE id = ?`, [reviewId])
+        const [rows] = await connection.query(`
+        DELETE FROM reviews WHERE id = ?`, 
+        [reviewId])
         if(rows.affectedRows > 0) {
             return true
         } else {
@@ -89,8 +94,6 @@ class ReviewsService {
 
     //If you are the executor of the order and you want to delete the review, which you sent to the order author, you can use this method
     async deleteExecutorsReview(reviewId: string, executorId: string) {
-        const connection = await connect
-
         const [review] = await connection.query(`
         SELECT requests.id, requests.executorId, reviews.id
         FROM requests
@@ -100,7 +103,9 @@ class ReviewsService {
         [executorId, reviewId])
         if(!review[0]) return false
 
-        const [rows] = await connection.query(`DELETE FROM reviews WHERE id = ?`, [reviewId])
+        const [rows] = await connection.query(`
+        DELETE FROM reviews WHERE id = ?`, 
+        [reviewId])
         if(rows.affectedRows > 0) {
             return true
         } else {
@@ -109,14 +114,17 @@ class ReviewsService {
     }
 
     async getReviews() {
-        const connection = await connect;
-        const [rows] = await connection.query(`SELECT * FROM reviews ORDER BY date DESC`)
+        const [rows] = await connection.query(`
+        SELECT * FROM reviews ORDER BY date DESC
+        `)
         return rows;
     }
 
     async getUserReviews(userId: string) {
-        const conection = await connect;
-        const [rows] = await conection.query(`SELECT * FROM reviews WHERE recipientId = ? ORDER BY date DESC`, 
+        const [rows] = await connection.query(`
+        SELECT * FROM reviews 
+        WHERE recipientId = ? 
+        ORDER BY date DESC`, 
         [userId])
         return rows;
     }
