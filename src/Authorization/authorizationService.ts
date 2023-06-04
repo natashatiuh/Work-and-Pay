@@ -1,5 +1,5 @@
 const mysql = require('mysql2/promise');
-import { connection } from "../common-files/mysqlConnection";
+import { connection, userRepository } from "../common-files/mysqlConnection";
 import { v4 } from 'uuid';
 const jwt = require('jsonwebtoken');
 
@@ -20,13 +20,13 @@ class AuthorizationService {
     }
 
     async logInUser(userName: string, password: string) {
-        const [maybeUser] = await connection.query(
+        const maybeUser = await userRepository.query(
             `SELECT * FROM users WHERE userName = ? AND password = ?`, 
             [userName, password]
         )
-        console.log(maybeUser[0])
-        if (maybeUser[0]) {
-            const token = jwt.sign({userId: maybeUser[0].id}, 'secret_key')
+        console.log(maybeUser)
+        if (maybeUser) {
+            const token = jwt.sign({userId: maybeUser.id}, 'secret_key')
             return token;
         } 
         return false

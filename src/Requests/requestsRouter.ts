@@ -17,6 +17,8 @@ router.post('/', auth(), validation(sendRequestSchema), async (req, res) => {
       const { orderId } = req.body as any;
       const isTrueOrder = await requestsService.checkOrder(orderId)
       if (isTrueOrder === true) {
+        console.log('USER ID IS:')
+        console.log(req.userId)
         let didSendRequest = await requestsService.sendRequest(orderId, req.userId);
         if (didSendRequest === true) {
             res.send('The request was sent!') 
