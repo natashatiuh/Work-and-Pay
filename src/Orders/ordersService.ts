@@ -1,27 +1,30 @@
 import { connection } from "../common-files/mysqlConnection";
 const mysql = require('mysql2/promise');
 import { v4 } from "uuid";
+import { orderRepository } from "../common-files/mysqlConnection";
 
 class OrdersService {
     async addOrder(orderName: string, authorsId: string, country: string, city: string, price: number) {
-        const date = new Date();
-        const dateOfPublishing = date.getFullYear()+'-'+(date.getMonth()+1)+'-'+date.getDate();
-        const timeOfPublishing = date.getHours() + ":" + date.getMinutes() + ":" + date.getSeconds();
-        const dateTime = dateOfPublishing+ ' ' +timeOfPublishing
         
-        await connection.query(`
-        INSERT INTO orders 
-        (id, orderName, authorsId, dateOfPublishing, country, city, price, state) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, 'Active')`, 
-        [v4(), orderName, authorsId, dateTime, country, city, price]);   
+        await orderRepository.insert({
+            id: v4(),
+            orderName: orderName,
+            authorsId: authorsId,
+            dateOfPublishing: new Date(),
+            country: country,
+            city: city,
+            price: price,
+            state: "ACTIVE"
+        })
     }
 
 
     async checkUsersOrder(orderId: string, userId: string) {
-        const [orders] = await connection.query(`
-        SELECT * FROM orders WHERE id = ? AND authorsId = ?`,
-        [orderId, userId])
-        if(orders[0]) {
+        const orders = await orderRepository.find({
+            where: {id: orderId, authorsId: userId}
+        })
+        
+        if (orders[0]) {
             return true
         } else {
             return false
@@ -29,36 +32,28 @@ class OrdersService {
     }
 
     async editOrder(orderId: string, orderName: string, country: string, city: string, price: number) {
-        await connection.query(`
-        UPDATE orders 
-        SET orderName = ?, country = ?, city = ?, price = ? 
-        WHERE id = ?`, 
-        [orderName, country, city, price, orderId]);
+        await orderRepository.update(
+            {id: orderId},
+            {orderName: orderName, country: country, city: city, price: price}
+        )
     }
 
     async deleteOrder(orderId: string) {
-        await connection.query(`
-        DELETE FROM orders 
-        WHERE id = ?`, 
-        [orderId]);
+        await orderRepository.delete({id: orderId})
     }
 
     async getOrders() {
-        const [rows] = await connection.query(`
-        SELECT * FROM orders 
-        ORDER BY dateOfPublishing DESC`)
-        return rows;
+        return await orderRepository.find({
+            order: {dateOfPublishing: "DESC"}
+        })
     }
 
     async getUserOrders(userId: string) {
-        const [rows] = await connection.query(`
-        SELECT * FROM orders 
-        WHERE authorsId = ?
-        ORDER BY dateOfPublishing DESC`,
-        [userId])
-        return rows;
+        return await orderRepository.find({
+            where: {authorsId: userId},
+            order: {dateOfPublishing: "DESC"}
+        })
     }
-    
 }
 
 export const ordersService = new OrdersService()

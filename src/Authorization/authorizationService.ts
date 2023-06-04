@@ -1,7 +1,8 @@
 const mysql = require('mysql2/promise');
-import { connection, userRepository } from "../common-files/mysqlConnection";
+import { connection } from "../common-files/mysqlConnection";
 import { v4 } from 'uuid';
 const jwt = require('jsonwebtoken');
+import { userRepository } from "../common-files/mysqlConnection";
 
 class AuthorizationService {
     async registerUser(userName: string, yearOfBirth: number, country: string, city: string, password: string) {
@@ -9,10 +10,14 @@ class AuthorizationService {
         const currentYear: number = date.getFullYear();
         const userAge: number = currentYear - yearOfBirth
         if (userAge >= 18) {
-            await connection.query(`
-            INSERT INTO users (id, userName, age, country, city, password)
-            VALUES (?, ?, ?, ?, ?, ?)`, 
-            [v4(), userName, userAge, country, city, password])
+            await userRepository.insert({
+                id: v4(),
+                userName: userName,
+                age: userAge,
+                country: country,
+                city: city,
+                password: password
+            })
             return true
         } else {
             return false
@@ -20,11 +25,11 @@ class AuthorizationService {
     }
 
     async logInUser(userName: string, password: string) {
-        const maybeUser = await userRepository.query(
+        const users = await userRepository.query(
             `SELECT * FROM users WHERE userName = ? AND password = ?`, 
             [userName, password]
         )
-        console.log(maybeUser)
+        const maybeUser = users[0]
         if (maybeUser) {
             const token = jwt.sign({userId: maybeUser.id}, 'secret_key')
             return token;
@@ -33,9 +38,8 @@ class AuthorizationService {
     }
 
     async deleteUser(userId: string, password: string) {
-        const [rows] = await connection.query(`DELETE FROM users WHERE id = ? AND password = ?`, 
-        [userId, password])
-        if(rows.affectedRows > 0) {
+        const result = await userRepository.delete({id: userId, password})
+        if(result.affected > 0) {
             return true
         } else {
             return false
@@ -46,16 +50,17 @@ class AuthorizationService {
             const date = new Date();
             const currentYear: number = date.getFullYear();
             const userAge: number = currentYear - yearOfBirth
-            await connection.query(
-                `UPDATE users 
-                SET userName = ?, age = ?, country = ?, city = ?
-                WHERE id = ?`, 
-                [userName, userAge, country, city, userId])
+            await userRepository.update(
+                {id: userId},
+                {userName: userName, age: userAge, country: country, city: city}
+            )
         }
 
     async checkUser(userId: string) {
-        const [users] = await connection.query(`SELECT * FROM users WHERE id = ?`, [userId])
-        if(users[0]) {
+        const user = await userRepository.find({
+            where: {id: userId}
+        })
+        if (user[0]) {
             return true
         } else {
             return false
@@ -63,11 +68,12 @@ class AuthorizationService {
     }
 
     async changePassword(oldPassword: string, newPassword: string) {
-        const [rows] = await connection.query(`
-        UPDATE users SET password = ? WHERE password = ?`,
-        [newPassword, oldPassword])
-        console.log(rows)
-        if(rows.affectedRows > 0) {
+        const result = await userRepository.update(
+            {password: oldPassword},
+            {password: newPassword}
+        )
+        console.log(result)
+        if(result.affected > 0) {
             return true
         } else {
             return false
@@ -75,10 +81,7 @@ class AuthorizationService {
     }
 
     async getUsers() {
-        const [rows] = await connection.query(`
-        SELECT * FROM users`
-        );
-        return rows;
+        return await userRepository.find()
     }
 }
 

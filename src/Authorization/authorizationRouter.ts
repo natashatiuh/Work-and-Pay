@@ -61,7 +61,7 @@ router.patch('/', auth(), validation(editUserSchema), async (req, res) => {
     try{
         const {userName, yearOfBirth, country, city} = req.body as any
         await authorizationService.editUser(req.userId, userName, yearOfBirth, country, city)
-        res.send(`The information about the user ${userName} was changed!`)
+        res.send(`The information about the user "${userName}" was changed!`)
     } catch(error) {
         console.log(error)
         res.send('Error!')

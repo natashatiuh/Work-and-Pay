@@ -145,13 +145,13 @@ class RequestsService {
     }
 
     async getUserRequests(userId: string) {
-        const [rows] = await connection.query(`
+        const result = await orderRepository.query(`
         SELECT orders.id AS orderId, orders.orderName, requests.id AS requestId, requests.executorId, requests.status
         FROM orders
         INNER JOIN requests ON orders.id = requests.orderId
         WHERE orders.authorsId = ?
         ORDER BY date DESC`, [userId])
-        return rows;
+        return result;
     }
 }
 
