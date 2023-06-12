@@ -19,7 +19,7 @@ class ReviewsService {
        
         if (reviews.length > 0) return false
         
-        const rows = await reviewRepository.insert({
+        const result = await reviewRepository.insert({
             id: v4(),
             orderId: orderId,
             recipientId: executorId,
@@ -27,8 +27,8 @@ class ReviewsService {
             comment: comment,
             date: new Date()
         })
-        console.log(rows)
-        if(rows.raw.affectedRows > 0) {
+        console.log(result)
+        if(result.raw.affectedRows > 0) {
             return true
         } else {
             return false
@@ -53,7 +53,7 @@ class ReviewsService {
             return false
         }
 
-        const rows = await reviewRepository.insert({
+        const result = await reviewRepository.insert({
             id: v4(),
             orderId: orderId,
             recipientId: authorsId,
@@ -63,7 +63,7 @@ class ReviewsService {
         })
         
         
-        if( rows.raw.affectedRows > 0) {
+        if( result.raw.affectedRows > 0) {
             return true
         } else {
             return false

@@ -1,4 +1,5 @@
-import { Column, Entity, PrimaryColumn } from 'typeorm';
+import { Column, Entity, ManyToMany, ManyToOne, PrimaryColumn } from 'typeorm';
+import { Order } from "../common-files/Order"
 
 
 @Entity({ name: 'reviews' })
@@ -20,4 +21,7 @@ export class Review {
 
     @Column()
     date: Date;
+
+    @ManyToOne(() => Order, (order)=> order.reviews)
+    order: Order
 }

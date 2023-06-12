@@ -1,4 +1,4 @@
-import { connection } from "../common-files/mysqlConnection";
+import { connection, userRepository } from "../common-files/mysqlConnection";
 const mysql = require('mysql2/promise');
 import { v4 } from "uuid";
 import { orderRepository } from "../common-files/mysqlConnection";
@@ -20,11 +20,11 @@ class OrdersService {
 
 
     async checkUsersOrder(orderId: string, userId: string) {
-        const orders = await orderRepository.find({
+        const order = await orderRepository.findOne({
             where: {id: orderId, authorsId: userId}
         })
-        
-        if (orders[0]) {
+
+        if (order) {
             return true
         } else {
             return false
@@ -51,7 +51,7 @@ class OrdersService {
     async getUserOrders(userId: string) {
         return await orderRepository.find({
             where: {authorsId: userId},
-            order: {dateOfPublishing: "DESC"}
+            order: {dateOfPublishing: "DESC"},
         })
     }
 }

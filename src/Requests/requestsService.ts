@@ -1,17 +1,17 @@
 import { connection } from "../common-files/mysqlConnection";
 const mysql = require('mysql2/promise');
 import { v4 } from 'uuid';
-import { requestRepository } from "../common-files/mysqlConnection";
 import { orderRepository } from "../common-files/mysqlConnection";
-import { In } from "typeorm";
+import { requestRepository } from "../common-files/mysqlConnection";
+import { In, Not } from "typeorm";
 
 class RequestsService {
     async checkOrder(orderId: string) {
-        const rows = await orderRepository.find({
+        const order = await orderRepository.findOne({
             where: {id: orderId}
         })
-        console.log(rows)
-        if (rows[0]) {
+        console.log(order)
+        if (order) {
             return true
         } else {
             return false
@@ -19,13 +19,15 @@ class RequestsService {
     }
 
     async checkOrderAuthor(orderId: string, executorId: string) {
-        const isNotAuthor = await orderRepository.query(`
-        SELECT orders.id, orders.authorsId, requests.id, requests.executorId
-        FROM orders
-        INNER JOIN requests 
-        ON orders.id = requests.orderId 
-        WHERE orders.id = ? AND requests.executorId = ? AND orders.authorsId <> requests.executorId`, 
-        [orderId, executorId])
+        const isNotAuthor = await orderRepository.find({
+            relations: {
+                requests: true
+            },
+            where: {
+                authorsId: Not(executorId),
+                requests: { executorId }
+            }
+        })
         console.log(isNotAuthor)
         if(isNotAuthor[0]) {
             return true
@@ -35,13 +37,13 @@ class RequestsService {
     }
 
     async sendRequest(orderId: string, executorId: string) {
-        const orders = await orderRepository.find({
+        const order = await orderRepository.findOne({
             select: {authorsId: true},
             where: {id: orderId}
         })
-        console.log(orders[0])
+        console.log(order)
         console.log(executorId)
-        if (orders[0].authorsId === executorId) return false
+        if (order.authorsId === executorId) return false
 
         const requests = await requestRepository.find({
             select: {executorId: true},
@@ -70,10 +72,15 @@ class RequestsService {
 
 
     async checkUserRequest(requestId: string, userId: string) {
-        const result = await orderRepository.query(`
-        SELECT orders.authorsId, requests.id AS requestId FROM orders
-        INNER JOIN requests ON orders.id = requests.orderId
-        WHERE requests.id = ? AND orders.authorsId = ?`, [requestId, userId]);
+        const result = await orderRepository.find({
+            relations: {
+                requests: true
+            },
+            where: {
+                authorsId: userId,
+                requests: { id: requestId }
+            }
+        })
 
         if(result[0]) {
             return true
@@ -104,53 +111,82 @@ class RequestsService {
     }
 
     async getOrderRequests(orderId: string, userId: string) {
-        const result = await orderRepository.query(`
-        SELECT orders.id AS orderId, orders.orderName, requests.id AS requestId, requests.executorId, requests.status 
-        FROM orders 
-        INNER JOIN requests ON orders.id = requests.orderId 
-        WHERE orders.id = ? AND orders.authorsId = ?
-        ORDER BY date DESC`, [orderId, userId])
+        const result = await orderRepository.find({
+            relations: {
+                requests: true
+            },
+            where: {
+                id: orderId,
+                authorsId: userId
+            },
+            order: {dateOfPublishing: 'DESC'}
+        })
+
         console.log(result)
         return result;
     }
 
     async getAcceptedRequests(userId: string) {
-        const result = await orderRepository.query(`
-        SELECT orders.id AS orderId, orders.orderName, requests.id AS requestId, requests.executorId, requests.status 
-        FROM orders 
-        INNER JOIN requests ON orders.id = requests.orderId 
-        WHERE orders.authorsId = ? AND requests.status = "ACCEPTED"
-        ORDER BY date DESC`, [userId])
+        const result = await orderRepository.find({
+            relations: {
+                requests: true
+            },
+            where: {
+                authorsId: userId,
+                requests: { status: "ACCEPTED" }
+            },
+            order: {
+                dateOfPublishing: "DESC"
+            }
+        })
+
         return result;
     }
 
     async getDeclinedRequests(userId: string) {
-        const result = await orderRepository.query(`
-        SELECT orders.id AS ordersId, orders.orderName, requests.id AS requestId, requests.executorId, requests.status
-        FROM orders 
-        INNER JOIN requests ON orders.id = requests.orderId 
-        WHERE orders.authorsId = ? AND status = "DECLINED"
-        ORDER BY date DESC`, [userId])
+        const result = await orderRepository.find({
+            relations: {
+                requests: true
+            },
+            where: {
+                authorsId: userId,
+                requests: { status: "DECLINED" }
+            },
+            order: {
+                dateOfPublishing: "DESC"
+            }
+        })
         return result;
     }
 
     async getPendingRequests(userId: string) {
-        const result = await orderRepository.query(`
-        SELECT orders.id AS orderId, orders.orderName, requests.id AS requestId, requests.executorId, requests.status 
-        FROM orders 
-        INNER JOIN requests ON orders.id = requests.orderId 
-        WHERE orders.authorsId = ? AND status = "PENDING"
-        ORDER BY date DESC`, [userId])
+        const result = await orderRepository.find({
+            relations: {
+                requests: true
+            },
+            where: {
+                authorsId: userId,
+                requests: { status: "PENDING" }
+            },
+            order: {
+                dateOfPublishing: "DESC"
+            }
+        })
         return result;
     }
 
     async getUserRequests(userId: string) {
-        const result = await orderRepository.query(`
-        SELECT orders.id AS orderId, orders.orderName, requests.id AS requestId, requests.executorId, requests.status
-        FROM orders
-        INNER JOIN requests ON orders.id = requests.orderId
-        WHERE orders.authorsId = ?
-        ORDER BY date DESC`, [userId])
+        const result = await orderRepository.find({
+            relations: {
+                requests: true
+            },
+            where: {
+                authorsId: userId,
+            },
+            order: {
+                dateOfPublishing: "DESC"
+            }
+        })
         return result;
     }
 }

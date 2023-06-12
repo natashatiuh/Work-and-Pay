@@ -25,13 +25,11 @@ class AuthorizationService {
     }
 
     async logInUser(userName: string, password: string) {
-        const users = await userRepository.query(
-            `SELECT * FROM users WHERE userName = ? AND password = ?`, 
-            [userName, password]
-        )
-        const maybeUser = users[0]
-        if (maybeUser) {
-            const token = jwt.sign({userId: maybeUser.id}, 'secret_key')
+        const user = await userRepository.findOne({
+            where: {userName, password}
+        })
+        if (user) {
+            const token = jwt.sign({userId: user.id}, 'secret_key')
             return token;
         } 
         return false
@@ -57,10 +55,10 @@ class AuthorizationService {
         }
 
     async checkUser(userId: string) {
-        const user = await userRepository.find({
+        const user = await userRepository.findOne({
             where: {id: userId}
         })
-        if (user[0]) {
+        if (user) {
             return true
         } else {
             return false

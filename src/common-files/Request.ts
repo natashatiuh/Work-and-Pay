@@ -1,4 +1,5 @@
-import { Column, Entity, PrimaryColumn } from 'typeorm';
+import { Column, Entity, JoinColumn, ManyToOne, PrimaryColumn } from 'typeorm';
+import { Order } from './Order';
 
 
 @Entity({ name: 'requests' })
@@ -17,4 +18,8 @@ export class Request {
 
     @Column()
     date: Date;
+
+    @ManyToOne(() => Order, (order) => order.requests)
+    @JoinColumn({ name: "orderId" })
+    order: Order
 }
