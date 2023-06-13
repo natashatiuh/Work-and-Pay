@@ -13,6 +13,9 @@ export class Review {
     @Column()
     recipientId: string;
 
+    @Column()
+    authorId: string;
+
     @Column({ nullable: true })
     mark: number | null;
 
