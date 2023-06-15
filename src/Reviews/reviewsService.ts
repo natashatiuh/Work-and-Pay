@@ -10,7 +10,7 @@ class ReviewsService {
             },
             where: {
                 id: orderId,
-                authorsId: reviewAuthorId,
+                authorId: reviewAuthorId,
                 requests: {executorId: recipientId, status: "ACCEPTED"}
             }
         })
@@ -47,7 +47,7 @@ class ReviewsService {
             },
             where: {
                 id: orderId,
-                authorsId: recipientId,
+                authorId: recipientId,
                 requests: { executorId: reviewAuthorId, status: "ACCEPTED" }
             }
         })

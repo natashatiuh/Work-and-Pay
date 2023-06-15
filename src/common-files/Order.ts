@@ -12,7 +12,7 @@ export class Order {
     orderName: string;
 
     @Column()
-    authorsId: string;
+    authorId: string;
 
     @Column({ nullable: true })
     dateOfPublishing: Date | null;

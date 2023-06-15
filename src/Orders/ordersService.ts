@@ -4,12 +4,12 @@ import { v4 } from "uuid";
 import { orderRepository } from "../common-files/mysqlConnection";
 
 class OrdersService {
-    async addOrder(orderName: string, authorsId: string, country: string, city: string, price: number) {
+    async addOrder(orderName: string, authorId: string, country: string, city: string, price: number) {
         
         await orderRepository.insert({
             id: v4(),
             orderName: orderName,
-            authorsId: authorsId,
+            authorId: authorId,
             dateOfPublishing: new Date(),
             country: country,
             city: city,
@@ -21,7 +21,7 @@ class OrdersService {
 
     async checkUsersOrder(orderId: string, userId: string) {
         const order = await orderRepository.findOne({
-            where: {id: orderId, authorsId: userId}
+            where: {id: orderId, authorId: userId}
         })
 
         if (order) {
@@ -50,7 +50,7 @@ class OrdersService {
 
     async getUserOrders(userId: string) {
         return await orderRepository.find({
-            where: {authorsId: userId},
+            where: {authorId: userId},
             order: {dateOfPublishing: "DESC"},
         })
     }

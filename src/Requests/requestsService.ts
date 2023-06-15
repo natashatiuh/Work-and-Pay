@@ -18,13 +18,13 @@ class RequestsService {
         }
     }
 
-    async checkOrderAuthor(orderId: string, executorId: string) {
+    async checkOrderAuthor(executorId: string) {
         const isNotAuthor = await orderRepository.find({
             relations: {
                 requests: true
             },
             where: {
-                authorsId: Not(executorId),
+                authorId: Not(executorId),
                 requests: { executorId }
             }
         })
@@ -38,12 +38,12 @@ class RequestsService {
 
     async sendRequest(orderId: string, executorId: string) {
         const order = await orderRepository.findOne({
-            select: {authorsId: true},
+            select: {authorId: true},
             where: {id: orderId}
         })
         console.log(order)
         console.log(executorId)
-        if (order.authorsId === executorId) return false
+        if (order.authorId === executorId) return false
 
         const requests = await requestRepository.find({
             select: {executorId: true},
@@ -77,7 +77,7 @@ class RequestsService {
                 requests: true
             },
             where: {
-                authorsId: userId,
+                authorId: userId,
                 requests: { id: requestId }
             }
         })
@@ -117,7 +117,7 @@ class RequestsService {
             },
             where: {
                 id: orderId,
-                authorsId: userId
+                authorId: userId
             },
             order: {dateOfPublishing: 'DESC'}
         })
@@ -132,7 +132,7 @@ class RequestsService {
                 requests: true
             },
             where: {
-                authorsId: userId,
+                authorId: userId,
                 requests: { status: "ACCEPTED" }
             },
             order: {
@@ -149,7 +149,7 @@ class RequestsService {
                 requests: true
             },
             where: {
-                authorsId: userId,
+                authorId: userId,
                 requests: { status: "DECLINED" }
             },
             order: {
@@ -165,7 +165,7 @@ class RequestsService {
                 requests: true
             },
             where: {
-                authorsId: userId,
+                authorId: userId,
                 requests: { status: "PENDING" }
             },
             order: {
@@ -181,7 +181,7 @@ class RequestsService {
                 requests: true
             },
             where: {
-                authorsId: userId,
+                authorId: userId,
             },
             order: {
                 dateOfPublishing: "DESC"
