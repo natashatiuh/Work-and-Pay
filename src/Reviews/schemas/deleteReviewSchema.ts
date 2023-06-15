@@ -1,5 +1,5 @@
 const Joi = require('joi');
 
-export const deleteAuthorsReviewSchema = Joi.object({
+export const deleteReviewSchema = Joi.object({
     reviewId: Joi.string().required()
 })

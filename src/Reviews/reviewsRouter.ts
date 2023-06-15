@@ -1,7 +1,6 @@
 import { reviewsService } from "./reviewsService";
 import { addReviewToExecutorSchema } from "./schemas/addReviewToExecutorSchema"; 
-import { deleteAuthorsReviewSchema } from "./schemas/deleteAuthorsReviewSchema";
-import { deleteExecutorsReviewSchema } from "./schemas/deleteExecutorReviewSchema";
+import { deleteReviewSchema } from "./schemas/deleteReviewSchema";
 import { addReviewToAuthorSchema } from "./schemas/addReviewToAuthorSchema";
 import { validation } from "../common-files/middlewares/validation";
 import { auth } from "../common-files/middlewares/authorization";
@@ -45,26 +44,10 @@ router.post('/to-author', auth(), validation(addReviewToAuthorSchema), async (re
 
 
 
-router.delete('/author', auth(), validation(deleteAuthorsReviewSchema), async (req, res) => {
+router.delete('/', auth(), validation(deleteReviewSchema), async (req, res) => {
     try{
         const { reviewId } = req.body as any
-        const review = await reviewsService.deleteAuthorsReview(reviewId, req.userId)
-        if(review) {
-            res.send('The review was deleted!')
-        } else {
-            res.send('The review does NOT exist!')
-        }
-        
-    } catch(error) {
-        console.log(error)
-        res.send(error)
-    }
-})
-
-router.delete('/executor', auth(), validation(deleteExecutorsReviewSchema), async (req, res) => {
-    try{
-        const { reviewId } = req.body as any
-        const review = await reviewsService.deleteExecutorsReview(reviewId, req.userId)
+        const review = await reviewsService.deleteReview(reviewId, req.userId)
         if(review) {
             res.send('The review was deleted!')
         } else {

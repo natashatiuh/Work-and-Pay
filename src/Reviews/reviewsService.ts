@@ -62,7 +62,7 @@ class ReviewsService {
 
         const [rows] = await connection.query(`
         INSERT INTO reviews (id, orderId, recipientId, authorId, mark, comment, date) 
-        VALUES (?, ?, ?, ?, ?, ?)`,
+        VALUES (?, ?, ?, ?, ?, ?, ?)`,
         [v4(), orderId, recipientId, reviewAuthorId, mark, comment, dateTime])
         if(rows.affectedRows > 0) {
             return true
@@ -71,42 +71,20 @@ class ReviewsService {
         }
     }
 
-    //If you are the author of the order and you want to delete the review, which you sent to the order executor, you can use this method
-    async deleteAuthorsReview(reviewId: string, authorId: string) { 
+    async deleteReview(reviewId: string, reviewAuthorId) {
+        const [reviewExists] = await connection.query(`
+        SELECT * FROM reviews 
+        WHERE id = ? AND authorId = ?
+        `, [reviewId, reviewAuthorId])
+
+        if(!reviewExists[0]) return false
+
         const [review] = await connection.query(`
-        SELECT orders.id, orders.authorId, reviews.id
-        FROM orders
-        INNER JOIN reviews
-        ON orders.id = reviews.orderId
-        WHERE orders.authorId = ? AND reviews.id = ?`, 
-        [authorId, reviewId])
-        if(!review[0]) return false
+        DELETE FROM reviews 
+        WHERE id = ? AND authorId = ?
+        `, [reviewId, reviewAuthorId])
 
-        const [rows] = await connection.query(`
-        DELETE FROM reviews WHERE id = ?`, 
-        [reviewId])
-        if(rows.affectedRows > 0) {
-            return true
-        } else {
-            return false
-        }
-    }
-
-    //If you are the executor of the order and you want to delete the review, which you sent to the order author, you can use this method
-    async deleteExecutorsReview(reviewId: string, executorId: string) {
-        const [review] = await connection.query(`
-        SELECT requests.id, requests.executorId, reviews.id
-        FROM requests
-        INNER JOIN reviews
-        ON requests.orderId = reviews.orderId
-        WHERE requests.executorId = ? AND reviews.id = ?`, 
-        [executorId, reviewId])
-        if(!review[0]) return false
-
-        const [rows] = await connection.query(`
-        DELETE FROM reviews WHERE id = ?`, 
-        [reviewId])
-        if(rows.affectedRows > 0) {
+        if (review.affectedRows > 0) {
             return true
         } else {
             return false
