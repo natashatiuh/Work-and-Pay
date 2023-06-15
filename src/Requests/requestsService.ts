@@ -98,17 +98,27 @@ class RequestsService {
     }
 
     async declineRequest(requestId: string) {
-        await connection.query(`
+        const [rows] = await connection.query(`
         UPDATE requests 
         SET status = "DECLINED"
         WHERE id = ?`, [requestId])
+        if(rows.affectedRows > 0) {
+            return true
+        } else {
+            return false
+        }
     }
 
     async cancelRequest(requestId: string) {
-        await connection.query(`
+        const [rows] = await connection.query(`
         DELETE FROM requests 
         WHERE id = ?`, 
         [requestId])
+        if(rows.affectedRows > 0) {
+            return true
+        } else {
+            return false
+        }
     }
 
     async getOrderRequests(orderId: string, userId: string) {
