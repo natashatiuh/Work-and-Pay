@@ -3,7 +3,7 @@ const mysql = require('mysql2/promise');
 import { v4 } from "uuid";
 
 class OrdersService {
-    async addOrder(orderName: string, authorsId: string, country: string, city: string, price: number) {
+    async addOrder(orderName: string, authorId: string, country: string, city: string, price: number) {
         const date = new Date();
         const dateOfPublishing = date.getFullYear()+'-'+(date.getMonth()+1)+'-'+date.getDate();
         const timeOfPublishing = date.getHours() + ":" + date.getMinutes() + ":" + date.getSeconds();
@@ -11,15 +11,15 @@ class OrdersService {
         
         await connection.query(`
         INSERT INTO orders 
-        (id, orderName, authorsId, dateOfPublishing, country, city, price, state) 
+        (id, orderName, authorId, dateOfPublishing, country, city, price, state) 
         VALUES (?, ?, ?, ?, ?, ?, ?, 'Active')`, 
-        [v4(), orderName, authorsId, dateTime, country, city, price]);   
+        [v4(), orderName, authorId, dateTime, country, city, price]);   
     }
 
 
     async checkUsersOrder(orderId: string, userId: string) {
         const [orders] = await connection.query(`
-        SELECT * FROM orders WHERE id = ? AND authorsId = ?`,
+        SELECT * FROM orders WHERE id = ? AND authorId = ?`,
         [orderId, userId])
         if(orders[0]) {
             return true
@@ -53,7 +53,7 @@ class OrdersService {
     async getUserOrders(userId: string) {
         const [rows] = await connection.query(`
         SELECT * FROM orders 
-        WHERE authorsId = ?
+        WHERE authorId = ?
         ORDER BY dateOfPublishing DESC`,
         [userId])
         return rows;

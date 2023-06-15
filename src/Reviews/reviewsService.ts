@@ -3,7 +3,7 @@ const mysql = require('mysql2/promise');
 import { v4 } from "uuid";
 
 class ReviewsService {
-    async addReviewToExecutor(userId: string, orderId: string, executorId: string, mark: number, comment: string) {
+    async addReviewToExecutor(orderId: string, recipientId: string, reviewAuthorId: string, mark: number, comment: string) {
         const date = new Date();
         const dateOfPublishing = date.getFullYear()+'-'+(date.getMonth()+1)+'-'+date.getDate();
         const timeOfPublishing = date.getHours() + ":" + date.getMinutes() + ":" + date.getSeconds();
@@ -14,22 +14,22 @@ class ReviewsService {
         FROM orders 
         INNER JOIN requests 
         ON orders.id = requests.orderId
-        WHERE orders.id = ? AND requests.executorId = ? AND orders.authorsID = ? AND requests.status = 'ACCEPTED'`,
-        [orderId, executorId, userId])
+        WHERE orders.id = ? AND requests.executorId = ? AND orders.authorId = ? AND requests.status = 'ACCEPTED'`,
+        [orderId, recipientId, reviewAuthorId])
         if(!orders[0]) return false
 
         const [reviews] = await connection.query(`
         SELECT * FROM reviews 
         WHERE orderId = ? AND recipientId = ?`, 
-        [orderId, executorId])
+        [orderId, recipientId])
         if(reviews.length > 0) {
             return false
         }
 
         const [rows] = await connection.query(`
-        INSERT INTO reviews (id, orderId, recipientId, mark, comment, date) 
-        VALUES (?, ?, ?, ?, ?, ?)`,
-        [v4(), orderId, executorId, mark, comment, dateTime])
+        INSERT INTO reviews (id, orderId, recipientId, authorId, mark, comment, date) 
+        VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [v4(), orderId, recipientId, reviewAuthorId, mark, comment, dateTime])
         if(rows.affectedRows > 0) {
             return true
         } else {
@@ -37,33 +37,33 @@ class ReviewsService {
         }
     }
 
-    async addReviewToAuthor(userId: string, orderId: string, authorsId: string, mark: number, comment: string) {
+    async addReviewToAuthor(orderId: string, recipientId: string, reviewAuthorId: string, mark: number, comment: string) {
         const date = new Date();
         const dateOfPublishing = date.getFullYear()+'-'+(date.getMonth()+1)+'-'+date.getDate();
         const timeOfPublishing = date.getHours() + ":" + date.getMinutes() + ":" + date.getSeconds();
         const dateTime = dateOfPublishing+ ' ' +timeOfPublishing
 
         const [orders] = await connection.query(`
-        SELECT orders.id AS orderId, orders.authorsId, requests.executorId
+        SELECT orders.id AS orderId, orders.authorId, requests.executorId
         FROM orders
         INNER JOIN requests
         ON orders.id = requests.orderId
-        WHERE orders.id = ? AND orders.authorsId = ? AND requests.executorId = ? AND requests.status = 'ACCEPTED'`, 
-        [orderId, authorsId, userId])
+        WHERE orders.id = ? AND orders.authorId = ? AND requests.executorId = ? AND requests.status = 'ACCEPTED'`, 
+        [orderId, recipientId, reviewAuthorId])
         console.log(orders[0])
         if(!orders[0]) return false
 
         const [reviews] = await connection.query(`
         SELECT * FROM reviews 
-        WHERE orderId = ? AND recipientId = ?`, [orderId, authorsId])
+        WHERE orderId = ? AND recipientId = ?`, [orderId, recipientId])
         if(reviews.length > 0) {
             return false
         }
 
         const [rows] = await connection.query(`
-        INSERT INTO reviews (id, orderId, recipientId, mark, comment, date) 
+        INSERT INTO reviews (id, orderId, recipientId, authorId, mark, comment, date) 
         VALUES (?, ?, ?, ?, ?, ?)`,
-        [v4(), orderId, authorsId, mark, comment, dateTime])
+        [v4(), orderId, recipientId, reviewAuthorId, mark, comment, dateTime])
         if(rows.affectedRows > 0) {
             return true
         } else {
@@ -74,11 +74,11 @@ class ReviewsService {
     //If you are the author of the order and you want to delete the review, which you sent to the order executor, you can use this method
     async deleteAuthorsReview(reviewId: string, authorId: string) { 
         const [review] = await connection.query(`
-        SELECT orders.id, orders.authorsId, reviews.id
+        SELECT orders.id, orders.authorId, reviews.id
         FROM orders
         INNER JOIN reviews
         ON orders.id = reviews.orderId
-        WHERE orders.authorsId = ? AND reviews.id = ?`, 
+        WHERE orders.authorId = ? AND reviews.id = ?`, 
         [authorId, reviewId])
         if(!review[0]) return false
 

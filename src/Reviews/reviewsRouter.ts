@@ -12,8 +12,8 @@ export const router = express.Router();
 
 router.post('/to-executor', auth(), validation(addReviewToExecutorSchema), async (req, res) => {
     try{
-        const { orderId, executorId, mark, comment } = req.body as any
-        const review = await reviewsService.addReviewToExecutor(req.userId, orderId, executorId, mark, comment)
+        const { orderId, recipientId, mark, comment } = req.body as any
+        const review = await reviewsService.addReviewToExecutor(orderId, recipientId, req.userId, mark, comment)
         if(review) {
             res.send('The review was added!')
         } else {
@@ -28,8 +28,8 @@ router.post('/to-executor', auth(), validation(addReviewToExecutorSchema), async
 
 router.post('/to-author', auth(), validation(addReviewToAuthorSchema), async (req, res) => {
     try{
-        const { orderId, authorsId, mark, comment } = req.body as any
-        const review = await reviewsService.addReviewToAuthor(req.userId, orderId, authorsId, mark, comment)
+        const { orderId, recipientId, mark, comment } = req.body as any
+        const review = await reviewsService.addReviewToAuthor(orderId, recipientId, req.userId, mark, comment)
         console.log(review)
         if(review) {
             res.send('The review was added!')
