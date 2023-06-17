@@ -87,9 +87,9 @@ class RequestsService {
 
     async acceptRequest(requestId: string) {
         const [rows] = await connection.query(`
-        UPDATE requests 
-        SET status = "ACCEPTED"
-        WHERE id = ? AND status = "PENDING" OR status = "DECLINED"`, [requestId])
+        UPDATE requests, orders 
+        SET requests.status = "ACCEPTED", orders.state = "INACTIVE"
+        WHERE requests.id = ? AND requests.orderId = orders.id AND requests.status = "PENDING" OR requests.status = "DECLINED"`, [requestId])
         if(rows.affectedRows > 0) {
             return true
         } else {
