@@ -9,32 +9,37 @@ class ReviewsService {
         const timeOfPublishing = date.getHours() + ":" + date.getMinutes() + ":" + date.getSeconds();
         const dateTime = dateOfPublishing+ ' ' +timeOfPublishing
 
-        const [orders] = await connection.query(`
-        SELECT orders.id AS orderId, requests.executorId 
-        FROM orders 
-        INNER JOIN requests 
-        ON orders.id = requests.orderId
-        WHERE orders.id = ? AND requests.executorId = ? AND orders.authorId = ? AND requests.status = 'ACCEPTED'`,
-        [orderId, recipientId, reviewAuthorId])
+        const ordersQuery = `
+            SELECT orders.id AS orderId, requests.executorId 
+            FROM orders 
+            INNER JOIN requests 
+            ON orders.id = requests.orderId
+            WHERE orders.id = ? AND requests.executorId = ? AND orders.authorId = ? AND requests.status = 'ACCEPTED'
+        `
+        const ordersParams = [orderId, recipientId, reviewAuthorId]
+
+        const [orders] = await connection.query(ordersQuery, ordersParams)
         if(!orders[0]) return false
 
-        const [reviews] = await connection.query(`
-        SELECT * FROM reviews 
-        WHERE orderId = ? AND recipientId = ?`, 
-        [orderId, recipientId])
+        const reviewQuery = `
+            SELECT * FROM reviews 
+            WHERE orderId = ? AND recipientId = ?
+        `
+        const reviewParams = [orderId, recipientId]
+        const [reviews] = await connection.query(reviewQuery, reviewParams)
         if(reviews.length > 0) {
             return false
         }
 
-        const [newReview] = await connection.query(`
-        INSERT INTO reviews (id, orderId, recipientId, authorId, mark, comment, date) 
-        VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [v4(), orderId, recipientId, reviewAuthorId, mark, comment, dateTime])
-        if(newReview.affectedRows > 0) {
-            return true
-        } else {
-            return false
-        }
+        const newReviewQuery = `
+            INSERT INTO 
+                reviews (id, orderId, recipientId, authorId, mark, comment, date) 
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        `
+        const newReviewParams = [v4(), orderId, recipientId, reviewAuthorId, mark, comment, dateTime]
+
+        const [newReview] = await connection.query(newReviewQuery, newReviewParams)
+        return (newReview.affectedRows > 0)
     }
 
     async addReviewToAuthor(orderId: string, recipientId: string, reviewAuthorId: string, mark: number, comment: string) {
@@ -43,52 +48,57 @@ class ReviewsService {
         const timeOfPublishing = date.getHours() + ":" + date.getMinutes() + ":" + date.getSeconds();
         const dateTime = dateOfPublishing+ ' ' +timeOfPublishing
 
-        const [orders] = await connection.query(`
-        SELECT orders.id AS orderId, orders.authorId, requests.executorId
-        FROM orders
-        INNER JOIN requests
-        ON orders.id = requests.orderId
-        WHERE orders.id = ? AND orders.authorId = ? AND requests.executorId = ? AND requests.status = 'ACCEPTED'`, 
-        [orderId, recipientId, reviewAuthorId])
+        const ordersQuery = `
+            SELECT orders.id AS orderId, orders.authorId, requests.executorId
+            FROM orders
+            INNER JOIN requests
+            ON orders.id = requests.orderId
+            WHERE orders.id = ? AND orders.authorId = ? AND requests.executorId = ? AND requests.status = 'ACCEPTED'
+        `
+        const ordersParams = [orderId, recipientId, reviewAuthorId]
+
+        const [orders] = await connection.query(ordersQuery, ordersParams)
         console.log(orders[0])
         if(!orders[0]) return false
 
-        const [reviews] = await connection.query(`
-        SELECT * FROM reviews 
-        WHERE orderId = ? AND recipientId = ?`, [orderId, recipientId])
+        const reviewsQuery = `
+            SELECT * FROM reviews 
+            WHERE orderId = ? AND recipientId = ?
+        `
+        const reviewsParams = [orderId, recipientId]
+        const [reviews] = await connection.query(reviewsQuery, reviewsParams)
         if(reviews.length > 0) {
             return false
         }
 
-        const [newReview] = await connection.query(`
-        INSERT INTO reviews (id, orderId, recipientId, authorId, mark, comment, date) 
-        VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [v4(), orderId, recipientId, reviewAuthorId, mark, comment, dateTime])
-        if(newReview.affectedRows > 0) {
-            return true
-        } else {
-            return false
-        }
+        const newReviewQuery = `
+            INSERT INTO reviews 
+                (id, orderId, recipientId, authorId, mark, comment, date) 
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        `
+        const newReviewParams = [v4(), orderId, recipientId, reviewAuthorId, mark, comment, dateTime]
+        const [newReview] = await connection.query(newReviewQuery, newReviewParams)
+        return (newReview.affectedRows > 0) 
     }
 
     async deleteReview(reviewId: string, reviewAuthorId: string) {
-        const [reviewExists] = await connection.query(`
-        SELECT * FROM reviews 
-        WHERE id = ? AND authorId = ?
-        `, [reviewId, reviewAuthorId])
+        const reviewExistsQuery = `
+            SELECT * FROM reviews 
+            WHERE id = ? AND authorId = ?
+        `
+        const reviewExistsParams = [reviewId, reviewAuthorId]
+        const [reviewExists] = await connection.query(reviewExistsQuery, reviewExistsParams)
         console.log(reviewExists[0])
         if(!reviewExists[0]) return false
 
-        const [review] = await connection.query(`
-        DELETE FROM reviews 
-        WHERE id = ? AND authorId = ?
-        `, [reviewId, reviewAuthorId])
+        const query = `
+            DELETE FROM reviews 
+            WHERE id = ? AND authorId = ?
+        `
+        const params = [reviewId, reviewAuthorId]
+        const [review] = await connection.query(query, params)
 
-        if (review.affectedRows > 0) {
-            return true
-        } else {
-            return false
-        }
+        return (review.affectedRows > 0) 
     }
 
     async getReviews() {
@@ -99,11 +109,13 @@ class ReviewsService {
     }
 
     async getUserReviews(userId: string) {
-        const [userReviews] = await connection.query(`
-        SELECT * FROM reviews 
-        WHERE recipientId = ? 
-        ORDER BY date DESC`, 
-        [userId])
+        const query = `
+            SELECT * FROM reviews 
+            WHERE recipientId = ? 
+            ORDER BY date DESC
+        `
+        const params = [userId]
+        const [userReviews] = await connection.query(query, params)
         return userReviews;
     }
 }

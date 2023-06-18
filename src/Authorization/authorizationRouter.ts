@@ -72,6 +72,7 @@ router.patch('/password', auth(), validation(changePasswordSchema), async (req, 
     try{
         const {oldPassword, newPassword} = req.body as any
         const isTrueUser = await authorizationService.checkUser(req.userId)
+        console.log(isTrueUser)
         if(isTrueUser) {
             const password = await authorizationService.changePassword(oldPassword, newPassword)
 

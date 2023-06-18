@@ -94,6 +94,7 @@ router.get('/order', auth(),  validation(getOrderRequestsSchema), async (req, re
     try{
         const { orderId } = req.body as any;
         const isTrueOrder = await requestsService.checkOrder(orderId)
+        console.log(isTrueOrder)
         if(isTrueOrder === true) {
             const orderRequests = await requestsService.getOrderRequests(orderId, req.userId);
             res.send(orderRequests)

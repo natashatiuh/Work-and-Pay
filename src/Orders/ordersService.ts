@@ -9,53 +9,66 @@ class OrdersService {
         const timeOfPublishing = date.getHours() + ":" + date.getMinutes() + ":" + date.getSeconds();
         const dateTime = dateOfPublishing+ ' ' +timeOfPublishing
         
-        await connection.query(`
-        INSERT INTO orders 
-        (id, orderName, authorId, dateOfPublishing, country, city, price, state) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, 'Active')`, 
-        [v4(), orderName, authorId, dateTime, country, city, price]);   
+        const query = `
+            INSERT INTO orders 
+                (id, orderName, authorId, dateOfPublishing, country, city, price, state) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, 'Active')
+        `
+        const params = [v4(), orderName, authorId, dateTime, country, city, price]
+        
+        await connection.query(query, params);   
     }
 
 
     async checkUsersOrder(orderId: string, userId: string) {
-        const [orders] = await connection.query(`
-        SELECT * FROM orders WHERE id = ? AND authorId = ?`,
-        [orderId, userId])
-        if(orders[0]) {
-            return true
-        } else {
-            return false
-        }
+        const query = `
+            SELECT * FROM orders 
+            WHERE id = ? AND authorId = ?
+        `
+        const params = [orderId, userId]
+        
+        const [orders] = await connection.query(query, params)
+        return orders[0]
     }
 
     async editOrder(orderId: string, orderName: string, country: string, city: string, price: number) {
-        await connection.query(`
-        UPDATE orders 
-        SET orderName = ?, country = ?, city = ?, price = ? 
-        WHERE id = ?`, 
-        [orderName, country, city, price, orderId]);
+        const query = `
+            UPDATE orders 
+            SET orderName = ?, country = ?, city = ?, price = ? 
+            WHERE id = ?
+        `
+        const params = [orderName, country, city, price, orderId]
+
+        await connection.query(query, params);
     }
 
     async deleteOrder(orderId: string) {
-        await connection.query(`
-        DELETE FROM orders 
-        WHERE id = ?`, 
-        [orderId]);
+        const query = `
+            DELETE FROM orders 
+            WHERE id = ?
+        `
+        const params = [orderId]
+
+        await connection.query(query, params);
     }
 
     async getOrders() {
-        const [orders] = await connection.query(`
-        SELECT * FROM orders 
-        ORDER BY dateOfPublishing DESC`)
+        const query = `
+            SELECT * FROM orders 
+            ORDER BY dateOfPublishing DESC
+`
+        const [orders] = await connection.query(query)
         return orders;
     }
 
     async getUserOrders(userId: string) {
-        const [userOrders] = await connection.query(`
-        SELECT * FROM orders 
-        WHERE authorId = ?
-        ORDER BY dateOfPublishing DESC`,
-        [userId])
+        const query = `
+            SELECT * FROM orders 
+            WHERE authorId = ?
+            ORDER BY dateOfPublishing DESC
+        `
+        const params = [userId]
+        const [userOrders] = await connection.query(query, params)
         return userOrders;
     }
     
