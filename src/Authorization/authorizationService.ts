@@ -33,9 +33,9 @@ class AuthorizationService {
     }
 
     async deleteUser(userId: string, password: string) {
-        const [rows] = await connection.query(`DELETE FROM users WHERE id = ? AND password = ?`, 
+        const [user] = await connection.query(`DELETE FROM users WHERE id = ? AND password = ?`, 
         [userId, password])
-        if(rows.affectedRows > 0) {
+        if(user.affectedRows > 0) {
             return true
         } else {
             return false
@@ -75,10 +75,10 @@ class AuthorizationService {
     }
 
     async getUsers() {
-        const [rows] = await connection.query(`
+        const [users] = await connection.query(`
         SELECT * FROM users`
         );
-        return rows;
+        return users;
     }
 }
 

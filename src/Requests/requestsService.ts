@@ -4,12 +4,12 @@ import { v4 } from 'uuid';
 
 class RequestsService {
     async checkOrder(orderId: string) {
-        const [rows] = await connection.query(`
+        const [order] = await connection.query(`
         SELECT * FROM orders 
         WHERE id = ?`, 
         [orderId]);
-        console.log(rows)
-        if(rows[0]) {
+        console.log(order)
+        if(order[0]) {
             return true
         } else {
             return false
@@ -59,12 +59,12 @@ class RequestsService {
             return false
         } 
         
-        const [rows] = await connection.query(`
+        const [newRequest] = await connection.query(`
         INSERT INTO requests (id, orderId, executorId, status, date) 
         VALUES (?, ?, ?, ?, ?)`, 
         [v4(), orderId, executorId, "PENDING", dateTime]);
-        console.log(rows);
-        if(rows.affectedRows > 0) {
+        console.log(newRequest);
+        if(newRequest.affectedRows > 0) {
             return true
         } else {
             return false
@@ -73,12 +73,12 @@ class RequestsService {
 
 
     async checkUserRequest(requestId: string, userId: string) {
-        const [rows] = await connection.query(`
+        const [userRequest] = await connection.query(`
         SELECT orders.authorId, requests.id AS requestId FROM orders
         INNER JOIN requests ON orders.id = requests.orderId
         WHERE requests.id = ? AND orders.authorId = ?`, [requestId, userId]);
 
-        if(rows[0]) {
+        if(userRequest[0]) {
             return true
         } else {
             return false
@@ -86,11 +86,11 @@ class RequestsService {
     }
 
     async acceptRequest(requestId: string) {
-        const [rows] = await connection.query(`
+        const [acceptedRequest] = await connection.query(`
         UPDATE requests, orders 
         SET requests.status = "ACCEPTED", orders.state = "INACTIVE"
         WHERE requests.id = ? AND requests.orderId = orders.id AND requests.status = "PENDING" OR requests.status = "DECLINED"`, [requestId])
-        if(rows.affectedRows > 0) {
+        if(acceptedRequest.affectedRows > 0) {
             return true
         } else {
             return false
@@ -98,11 +98,11 @@ class RequestsService {
     }
 
     async declineRequest(requestId: string) {
-        const [rows] = await connection.query(`
+        const [declinedRequest] = await connection.query(`
         UPDATE requests 
         SET status = "DECLINED"
         WHERE id = ?`, [requestId])
-        if(rows.affectedRows > 0) {
+        if(declinedRequest.affectedRows > 0) {
             return true
         } else {
             return false
@@ -110,11 +110,11 @@ class RequestsService {
     }
 
     async cancelRequest(requestId: string) {
-        const [rows] = await connection.query(`
+        const [cancelledRequest] = await connection.query(`
         DELETE FROM requests 
         WHERE id = ?`, 
         [requestId])
-        if(rows.affectedRows > 0) {
+        if(cancelledRequest.affectedRows > 0) {
             return true
         } else {
             return false
@@ -122,54 +122,54 @@ class RequestsService {
     }
 
     async getOrderRequests(orderId: string, userId: string) {
-        const [rows] = await connection.query(`
+        const [orderRequests] = await connection.query(`
         SELECT orders.id AS orderId, orders.orderName, requests.id AS requestId, requests.executorId, requests.status 
         FROM orders 
         INNER JOIN requests ON orders.id = requests.orderId 
         WHERE orders.id = ? AND orders.authorId = ?
         ORDER BY date DESC`, [orderId, userId])
-        console.log(rows)
-        return rows;
+        console.log(orderRequests)
+        return orderRequests;
     }
 
     async getAcceptedRequests(userId: string) {
-        const [rows] = await connection.query(`
+        const [acceptedRequests] = await connection.query(`
         SELECT orders.id AS orderId, orders.orderName, requests.id AS requestId, requests.executorId, requests.status 
         FROM orders 
         INNER JOIN requests ON orders.id = requests.orderId 
         WHERE orders.authorId = ? AND requests.status = "ACCEPTED"
         ORDER BY date DESC`, [userId])
-        return rows;
+        return acceptedRequests;
     }
 
     async getDeclinedRequests(userId: string) {
-        const [rows] = await connection.query(`
+        const [declinedRequests] = await connection.query(`
         SELECT orders.id AS ordersId, orders.orderName, requests.id AS requestId, requests.executorId, requests.status
         FROM orders 
         INNER JOIN requests ON orders.id = requests.orderId 
         WHERE orders.authorId = ? AND status = "DECLINED"
         ORDER BY date DESC`, [userId])
-        return rows;
+        return declinedRequests;
     }
 
     async getPendingRequests(userId: string) {
-        const [rows] = await connection.query(`
+        const [pendingRequests] = await connection.query(`
         SELECT orders.id AS orderId, orders.orderName, requests.id AS requestId, requests.executorId, requests.status 
         FROM orders 
         INNER JOIN requests ON orders.id = requests.orderId 
         WHERE orders.authorId = ? AND status = "PENDING"
         ORDER BY date DESC`, [userId])
-        return rows;
+        return pendingRequests;
     }
 
     async getUserRequests(userId: string) {
-        const [rows] = await connection.query(`
+        const [userRequests] = await connection.query(`
         SELECT orders.id AS orderId, orders.orderName, requests.id AS requestId, requests.executorId, requests.status
         FROM orders
         INNER JOIN requests ON orders.id = requests.orderId
         WHERE orders.authorId = ?
         ORDER BY date DESC`, [userId])
-        return rows;
+        return userRequests;
     }
 }
 

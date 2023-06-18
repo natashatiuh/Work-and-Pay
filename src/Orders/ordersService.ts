@@ -44,19 +44,19 @@ class OrdersService {
     }
 
     async getOrders() {
-        const [rows] = await connection.query(`
+        const [orders] = await connection.query(`
         SELECT * FROM orders 
         ORDER BY dateOfPublishing DESC`)
-        return rows;
+        return orders;
     }
 
     async getUserOrders(userId: string) {
-        const [rows] = await connection.query(`
+        const [userOrders] = await connection.query(`
         SELECT * FROM orders 
         WHERE authorId = ?
         ORDER BY dateOfPublishing DESC`,
         [userId])
-        return rows;
+        return userOrders;
     }
     
 }

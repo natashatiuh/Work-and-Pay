@@ -26,11 +26,11 @@ class ReviewsService {
             return false
         }
 
-        const [rows] = await connection.query(`
+        const [newReview] = await connection.query(`
         INSERT INTO reviews (id, orderId, recipientId, authorId, mark, comment, date) 
         VALUES (?, ?, ?, ?, ?, ?, ?)`,
         [v4(), orderId, recipientId, reviewAuthorId, mark, comment, dateTime])
-        if(rows.affectedRows > 0) {
+        if(newReview.affectedRows > 0) {
             return true
         } else {
             return false
@@ -60,23 +60,23 @@ class ReviewsService {
             return false
         }
 
-        const [rows] = await connection.query(`
+        const [newReview] = await connection.query(`
         INSERT INTO reviews (id, orderId, recipientId, authorId, mark, comment, date) 
         VALUES (?, ?, ?, ?, ?, ?, ?)`,
         [v4(), orderId, recipientId, reviewAuthorId, mark, comment, dateTime])
-        if(rows.affectedRows > 0) {
+        if(newReview.affectedRows > 0) {
             return true
         } else {
             return false
         }
     }
 
-    async deleteReview(reviewId: string, reviewAuthorId) {
+    async deleteReview(reviewId: string, reviewAuthorId: string) {
         const [reviewExists] = await connection.query(`
         SELECT * FROM reviews 
         WHERE id = ? AND authorId = ?
         `, [reviewId, reviewAuthorId])
-
+        console.log(reviewExists[0])
         if(!reviewExists[0]) return false
 
         const [review] = await connection.query(`
@@ -92,19 +92,19 @@ class ReviewsService {
     }
 
     async getReviews() {
-        const [rows] = await connection.query(`
+        const [reviews] = await connection.query(`
         SELECT * FROM reviews ORDER BY date DESC
         `)
-        return rows;
+        return reviews;
     }
 
     async getUserReviews(userId: string) {
-        const [rows] = await connection.query(`
+        const [userReviews] = await connection.query(`
         SELECT * FROM reviews 
         WHERE recipientId = ? 
         ORDER BY date DESC`, 
         [userId])
-        return rows;
+        return userReviews;
     }
 }
 
