@@ -112,12 +112,12 @@ class RequestsService {
         return declinedRequest.affectedRows > 0
     }
 
-    async cancelRequest(requestId: string) {
+    async cancelRequest(requestId: string, executorId: string) {
         const query = `
             DELETE FROM requests 
-            WHERE id = ?
+            WHERE id = ? AND executorId = ?
         `
-        const params = [requestId]
+        const params = [requestId, executorId]
 
         const [cancelledRequest] = await connection.query(query, params)
         return cancelledRequest.affectedRows > 0
