@@ -115,7 +115,7 @@ class RequestsService {
     async cancelRequest(requestId: string, executorId: string) {
         const query = `
             DELETE FROM requests 
-            WHERE id = ? AND executorId = ?
+            WHERE id = ? AND executorId = ? AND status = "ACCEPTED" OR  status = "PENDING"
         `
         const params = [requestId, executorId]
 
