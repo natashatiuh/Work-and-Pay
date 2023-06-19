@@ -88,7 +88,6 @@ class RequestsService {
             return false
         }
     }
-
     
     async acceptRequest(requestId: string) {
         const result = await requestRepository.update(
@@ -96,7 +95,7 @@ class RequestsService {
             { status: "ACCEPTED" }
         )
 
-        return result.affected > 0
+        return (result.affected > 0)
     }
 
     async declineRequest(requestId: string) {
@@ -106,8 +105,9 @@ class RequestsService {
         )
     }
 
-    async cancelRequest(requestId: string) {
-        await requestRepository.delete({ id: requestId })
+    async cancelRequest(requestId: string, executorId: string) {
+        const request = await requestRepository.delete({ id: requestId, executorId, status: In(["ACCEPTED", "PENDING"]) })
+        return (request.affected > 0)
     }
 
     async getOrderRequests(orderId: string, userId: string) {

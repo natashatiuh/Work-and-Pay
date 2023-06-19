@@ -78,9 +78,9 @@ router.patch('/decline', auth(), validation(declineRequestSchema), async (req, r
 router.delete('/', auth(), validation(cancelRequestSchema), async (req, res) => {
     try{
         const { requestId } = req.body as any;
-        const isTrueRequest = await requestsService.checkUserRequest(requestId, req.userId)
-        if(isTrueRequest === true) {
-            await requestsService.cancelRequest(requestId)
+        const request = await requestsService.cancelRequest(requestId, req.userId)
+        if(request === true) {
+            
             res.send('The request was cancelled!')
         } else {
             res.send('The request does NOT exist!')
