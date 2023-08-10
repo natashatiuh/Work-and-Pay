@@ -12,7 +12,6 @@ export const auth = () => {
             console.log(tokenInfo)
 
             req.userId = userId
-            
         } catch(error) {
             console.log(error)
             res.send('Unauthorized!')

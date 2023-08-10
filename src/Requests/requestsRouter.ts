@@ -18,7 +18,7 @@ router.post('/', auth(), validation(sendRequestSchema), async (req, res) => {
       const isTrueOrder = await requestsService.checkOrder(orderId)
       if (isTrueOrder === true) {
         let didSendRequest = await requestsService.sendRequest(orderId, req.userId);
-        if (didSendRequest === true) {
+        if (didSendRequest) {
             res.send('The request was sent!') 
         } else {
             res.send('The request was NOT sent!') 

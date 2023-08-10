@@ -1,6 +1,5 @@
-import { connection } from "../common-files/mysqlConnection";
-const mysql = require('mysql2/promise');
-import { v4 } from "uuid";
+import { ordersRepository } from "../common-files/mongodbConnection";
+import { ObjectId } from "mongodb";
 
 class OrdersService {
     async addOrder(orderName: string, authorId: string, country: string, city: string, price: number) {
@@ -9,66 +8,45 @@ class OrdersService {
         const timeOfPublishing = date.getHours() + ":" + date.getMinutes() + ":" + date.getSeconds();
         const dateTime = dateOfPublishing+ ' ' +timeOfPublishing
         
-        const query = `
-            INSERT INTO orders 
-                (id, orderName, authorId, dateOfPublishing, country, city, price, state) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, 'Active')
-        `
-        const params = [v4(), orderName, authorId, dateTime, country, city, price]
-        
-        await connection.query(query, params);   
+        await ordersRepository.insertOne({
+            orderName: orderName,
+            authorId: new ObjectId(authorId),
+            country: country,
+            city: city,
+            price: price,
+            date: dateTime
+        })
     }
 
 
     async checkUsersOrder(orderId: string, userId: string) {
-        const query = `
-            SELECT * FROM orders 
-            WHERE id = ? AND authorId = ?
-        `
-        const params = [orderId, userId]
-        
-        const [orders] = await connection.query(query, params)
-        return orders[0]
+        const order = await ordersRepository.find({_id: { $eq: new ObjectId(orderId) }, authorId: new ObjectId(userId)}).toArray()
+        return order[0]
     }
 
     async editOrder(orderId: string, orderName: string, country: string, city: string, price: number) {
-        const query = `
-            UPDATE orders 
-            SET orderName = ?, country = ?, city = ?, price = ? 
-            WHERE id = ?
-        `
-        const params = [orderName, country, city, price, orderId]
-
-        await connection.query(query, params);
+        await ordersRepository.updateOne({_id: { $eq: new ObjectId(orderId) }},
+        {
+            $set: {
+                orderName: orderName,
+                country: country, 
+                city: city,
+                price: price
+            }
+        })
     }
 
     async deleteOrder(orderId: string) {
-        const query = `
-            DELETE FROM orders 
-            WHERE id = ?
-        `
-        const params = [orderId]
-
-        await connection.query(query, params);
+        await ordersRepository.deleteOne({_id: { $eq: new ObjectId(orderId) }})
     }
 
     async getOrders() {
-        const query = `
-            SELECT * FROM orders 
-            ORDER BY dateOfPublishing DESC
-`
-        const [orders] = await connection.query(query)
+        const orders = await ordersRepository.find().sort({date: -1}).toArray()
         return orders;
     }
 
     async getUserOrders(userId: string) {
-        const query = `
-            SELECT * FROM orders 
-            WHERE authorId = ?
-            ORDER BY dateOfPublishing DESC
-        `
-        const params = [userId]
-        const [userOrders] = await connection.query(query, params)
+        const userOrders = await ordersRepository.find({authorId: new ObjectId(userId)}).sort({date: -1}).toArray()
         return userOrders;
     }
     

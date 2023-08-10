@@ -1,32 +1,12 @@
-import { request } from "express";
-import { connection } from "../common-files/mysqlConnection";
-const mysql = require('mysql2/promise');
-import { v4 } from 'uuid';
+import { requestsRepository } from "../common-files/mongodbConnection";
+import { ordersRepository } from "../common-files/mongodbConnection";
+import { ObjectId } from "mongodb";
 
 class RequestsService {
     async checkOrder(orderId: string) {
-        const query = `
-            SELECT * FROM orders 
-            WHERE id = ?
-        `
-        const params = [orderId]
-
-        const [order] = await connection.query(query, params);
-        if (order[0]) return true
-    }
-
-    async checkOrderAuthor(orderId: string, executorId: string) {
-        const query = `
-            SELECT orders.id, orders.authorId, requests.id, requests.executorId
-            FROM orders
-            INNER JOIN requests 
-            ON orders.id = requests.orderId 
-            WHERE orders.id = ? AND requests.executorId = ? AND orders.authorId <> requests.executorId
-        `
-        const params = [orderId, executorId]
-
-        const [isNotAuthor] = await connection.query(query, params)
-        return isNotAuthor[0]
+        const trueOrder = await ordersRepository.find({_id: { $eq: new ObjectId(orderId) }}).toArray()
+        console.log(trueOrder[0])
+        if (trueOrder[0]) return true
     }
 
     async sendRequest(orderId: string, executorId: string) {
@@ -35,166 +15,294 @@ class RequestsService {
         const timeOfPublishing = date.getHours() + ":" + date.getMinutes() + ":" + date.getSeconds();
         const dateTime = dateOfPublishing+ ' ' +timeOfPublishing
 
-        const ordersQuery = `
-            SELECT authorId FROM orders 
-            WHERE id = ?
-        `
-        const ordersParams = [orderId]
+        const order = await ordersRepository.find({_id: { $eq: new ObjectId(orderId) }}).toArray()
 
-        const [orders] = await connection.query(ordersQuery, ordersParams)
-        const order = orders[0]
-
+        console.log('This is one:')
         console.log(order)
         console.log(executorId)
-        if (order.authorId === executorId) {
+        if (order[0].authorId === executorId) {
             return false
         }
 
-        const requestsQuery = `
-            SELECT executorId FROM requests 
-            WHERE executorId = ? AND orderId = ?
-        `
-        const requestsParams = [executorId, orderId]
-
-        const [requests] = await connection.query(requestsQuery, requestsParams)
-        console.log(requests)
-        if(requests.length > 0) return false
+        const request = await requestsRepository.find({executorId: new ObjectId(executorId), orderId: new ObjectId(orderId)}).toArray()
         
-        const newRequestQuery = `
-            INSERT INTO requests 
-                (id, orderId, executorId, status, date) 
-            VALUES (?, ?, ?, ?, ?)
-        `
-        const newRequestParams = [v4(), orderId, executorId, "PENDING", dateTime]
-        const [newRequest] = await connection.query(newRequestQuery, newRequestParams);
+        console.log('This is two:')
+        console.log(request)
+        if(request.length > 0) return false
+        
+        const newRequest = await requestsRepository.insertOne({
+            orderId: new ObjectId(orderId),
+            executorId: new ObjectId(executorId),
+            status: "PENDING",
+            date: dateTime
+        })
+        
+        console.log('This is three:')
         console.log(newRequest);
-        return (newRequest.affectedRows > 0) 
+        return newRequest
     }
 
-
     async checkUserRequest(requestId: string, userId: string) {
-        const query = `
-            SELECT orders.authorId, requests.id AS requestId FROM orders
-            INNER JOIN requests 
-            ON orders.id = requests.orderId
-            WHERE requests.id = ? AND orders.authorId = ?
-        `
-        const params = [requestId, userId]
+        const mongo = await ordersRepository.aggregate([
+            {
+                $lookup: {
+                    from: 'requests',
+                    localField: '_id',
+                    foreignField: 'orderId',
+                    as: 'orderRequests'
+                }
+            },
+            {
+                $unwind: '$orderRequests'
+            },
+            {
+                $match: {
+                    authorId: new ObjectId(userId),
+                    'orderRequests._id': new ObjectId(requestId)
+                }
+            },
+            {
+                $project: {
+                    "_id": 1,
+                    "authorId": 1,
+                    "requestId": "$orderRequests._id"
+                }
+            }
+        ])
 
-        const [userRequest] = await connection.query(query, params);
-        return userRequest[0]
+        const documents = await mongo.toArray()
+        console.log('docs', documents)
+
+        return documents[0] != undefined
     }
 
     async acceptRequest(requestId: string) {
-        const query = `
-            UPDATE requests, orders 
-            SET requests.status = "ACCEPTED", orders.state = "INACTIVE"
-            WHERE requests.id = ? 
-            AND requests.orderId = orders.id 
-            AND requests.status = "PENDING" 
-            OR requests.status = "DECLINED"
-        `
-        const params = [requestId]
-
-        const [acceptedRequest] = await connection.query(query, params)
-        return (acceptedRequest.affectedRows > 0)
+        const status = await requestsRepository.updateOne({_id: { $eq: new ObjectId(requestId) }, status: "PENDING" || "DECLINED"}, {
+            $set: {
+                status: "ACCEPTED"
+            }
+        })
+        
+        return (status.modifiedCount > 0)
     }
 
     async declineRequest(requestId: string) {
-        const query = `
-            UPDATE requests 
-            SET status = "DECLINED"
-            WHERE id = ?
-        `
-        const params = [requestId]
-
-        const [declinedRequest] = await connection.query(query, params)
-        return declinedRequest.affectedRows > 0
+        const declinedRequest = await requestsRepository.updateOne({_id: { $eq: new ObjectId(requestId) }}, {
+            $set: {
+                status: "DECLINED"
+            }
+        })
+        
+        return (declinedRequest.modifiedCount > 0)
     }
 
     async cancelRequest(requestId: string, executorId: string) {
-        const query = `
-            DELETE FROM requests 
-            WHERE id = ? AND executorId = ? AND status = "ACCEPTED" OR  status = "PENDING"
-        `
-        const params = [requestId, executorId]
-
-        const [cancelledRequest] = await connection.query(query, params)
-        return cancelledRequest.affectedRows > 0
+        const cancelledRequest = await requestsRepository.deleteOne({_id: { $eq: new ObjectId(requestId)}, executorId: new ObjectId(executorId), status: "ACCEPTED" || "PENDING" })
+        return cancelledRequest.deletedCount > 0
     }
 
     async getOrderRequests(orderId: string, userId: string) {
-        const query = `
-            SELECT orders.id AS orderId, orders.orderName, requests.id AS requestId, requests.executorId, requests.status 
-            FROM orders 
-            INNER JOIN requests 
-            ON orders.id = requests.orderId 
-            WHERE orders.id = ? AND orders.authorId = ?
-            ORDER BY date DESC
-        `
-        const params = [orderId, userId]
+        const mongo = await ordersRepository.aggregate([
+            {
+                $lookup: {
+                    from: "requests",
+                    localField: "_id",
+                    foreignField: "orderId",
+                    as: "orderRequests"
+                }
+            }, 
 
-        const [orderRequests] = await connection.query(query, params)
+            {
+                $unwind: "$orderRequests"
+            },
+
+            {
+                $match: {
+                    _id: new ObjectId(orderId),
+                    authorId: new ObjectId(userId)
+                }
+            },
+
+            {
+                $sort: { "date": -1 }
+            },
+
+            {
+                $project: {
+                    "_id": 1,
+                    "orderName": 1,
+                    "requestId": "$orderRequests._id",
+                    "executorId": "$orderRequests.executorId",
+                    "status": "$orderRequests.status",
+                }
+            }
+        ])
+
+        const orderRequests = await mongo.toArray()
+        console.log(orderRequests)
         return orderRequests;
     }
 
     async getAcceptedRequests(userId: string) {
-        const query = `
-            SELECT orders.id AS orderId, orders.orderName, requests.id AS requestId, requests.executorId, requests.status 
-            FROM orders 
-            INNER JOIN requests 
-            ON orders.id = requests.orderId 
-            WHERE orders.authorId = ? AND requests.status = "ACCEPTED"
-            ORDER BY date DESC
-        `
-        const params = [userId]
+        const mongo = await ordersRepository.aggregate([
+            {
+                $lookup: {
+                    from: 'requests',
+                    localField: '_id',
+                    foreignField: 'orderId',
+                    as: 'orderRequests'
+                }
+            },
 
-        const [acceptedRequests] = await connection.query(query, params)
+            {
+                $unwind: "$orderRequests"
+            },
+
+            {
+                $match: {
+                    authorId: new ObjectId(userId),
+                    'orderRequests.status': "ACCEPTED"
+                }
+            },
+
+            {
+                $sort: {"date": -1}
+            },
+            {
+                $project: {
+                    "_id": 1,
+                    "orderName": 1,
+                    "requestId": "$orderRequests._id",
+                    "executorId": "$orderRequests.executorId",
+                    "status": "$orderRequests.status"
+                }
+            }
+        ])
+
+        const acceptedRequests = await mongo.toArray()
+        
         return acceptedRequests;
     }
 
     async getDeclinedRequests(userId: string) {
-        const query = `
-            SELECT orders.id AS ordersId, orders.orderName, requests.id AS requestId, requests.executorId, requests.status
-            FROM orders 
-            INNER JOIN requests 
-            ON orders.id = requests.orderId 
-            WHERE orders.authorId = ? AND status = "DECLINED"
-            ORDER BY date DESC
-        `
-        const params = [userId]
+        const mongo = await ordersRepository.aggregate([
+            {
+                $lookup: {
+                    from: "requests",
+                    localField: "_id",
+                    foreignField: "orderId",
+                    as: "orderRequests"
+                }
+            },
 
-        const [declinedRequests] = await connection.query(query, params)
+            {
+                $unwind: "$orderRequests"
+            },
+
+            {
+                $match: {
+                    authorId: new ObjectId(userId),
+                    "orderRequests.status": "DECLINED"
+                }
+            },
+
+            {
+                $sort: { "date": -1 }
+            },
+
+            {
+                $project: {
+                    "_id": 1, 
+                    "orderName": 1,
+                    "requestId": "$orderRequests._id",
+                    "executorId": "$orderRequests.executorId",
+                    "status": "$orderRequests.status"
+                }
+            }
+        ])
+        
+        const declinedRequests = await mongo.toArray()
         return declinedRequests;
     }
 
     async getPendingRequests(userId: string) {
-        const query = `
-            SELECT orders.id AS orderId, orders.orderName, requests.id AS requestId, requests.executorId, requests.status 
-            FROM orders 
-            INNER JOIN requests 
-            ON orders.id = requests.orderId 
-            WHERE orders.authorId = ? AND status = "PENDING"
-            ORDER BY date DESC
-        `
-        const params = [userId]
+        const mongo = await ordersRepository.aggregate([
+            {
+                $lookup: {
+                    from: "requests",
+                    localField: "_id",
+                    foreignField: "orderId",
+                    as: "orderRequests"
+                }
+            },
 
-        const [pendingRequests] = await connection.query(query, params)
+            {
+                $unwind: "$orderRequests"
+            },
+
+            {
+                $match: {
+                    authorId: new ObjectId(userId),
+                    "orderRequests.status": "PENDING", 
+                }
+            },
+
+            {
+                $sort: { "date": -1 }
+            },
+
+            {
+                $project: {
+                    "_id": 1,
+                    "orderName": 1,
+                    "requestId": "$orderRequests._id",
+                    "executorId": "$orderRequests.executorId",
+                    "status": "$orderRequests.status"
+                }
+            }
+        ])
+
+        const pendingRequests = await mongo.toArray()
         return pendingRequests;
     }
 
     async getUserRequests(userId: string) {
-        const query = `
-            SELECT orders.id AS orderId, orders.orderName, requests.id AS requestId, requests.executorId, requests.status
-            FROM orders
-            INNER JOIN requests 
-            ON orders.id = requests.orderId
-            WHERE orders.authorId = ?
-            ORDER BY date DESC
-        `
-        const params = [userId]
+        const mongo = await ordersRepository.aggregate([
+            {
+                $lookup: {
+                    from: "requests",
+                    localField: "_id",
+                    foreignField: "orderId",
+                    as: "orderRequests"
+                }
+            },
 
-        const [userRequests] = await connection.query(query, params)
+            {
+                $unwind: "$orderRequests"
+            },
+
+            {
+                $match: {
+                    authorId: new ObjectId(userId)
+                }
+            },
+
+            {
+                $sort: { "date": -1 }
+            },
+
+            {
+                $project: {
+                    "_id": 1,
+                    "orderName": 1,
+                    "requestId": "$orderRequests._id",
+                    "executorId": "$orderRequests.executorId",
+                    "status": "$orderRequests.status"
+                }
+            }
+        ])
+        
+        const userRequests = await mongo.toArray()
         return userRequests;
     }
 }

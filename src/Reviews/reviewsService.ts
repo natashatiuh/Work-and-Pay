@@ -1,6 +1,5 @@
-import { connection } from "../common-files/mysqlConnection";
-const mysql = require('mysql2/promise');
-import { v4 } from "uuid";
+import { ObjectId } from "mongodb";
+import { ordersRepository, reviewsRepository } from "../common-files/mongodbConnection";
 
 class ReviewsService {
     async addReviewToExecutor(orderId: string, recipientId: string, reviewAuthorId: string, mark: number, comment: string) {
@@ -9,37 +8,59 @@ class ReviewsService {
         const timeOfPublishing = date.getHours() + ":" + date.getMinutes() + ":" + date.getSeconds();
         const dateTime = dateOfPublishing+ ' ' +timeOfPublishing
 
-        const ordersQuery = `
-            SELECT orders.id AS orderId, requests.executorId 
-            FROM orders 
-            INNER JOIN requests 
-            ON orders.id = requests.orderId
-            WHERE orders.id = ? AND requests.executorId = ? AND orders.authorId = ? AND requests.status = 'ACCEPTED'
-        `
-        const ordersParams = [orderId, recipientId, reviewAuthorId]
+        const mongo = await ordersRepository.aggregate([
+            {
+                $lookup: {
+                    from: "requests",
+                    localField: "_id",
+                    foreignField: "orderId",
+                    as: "orderRequests"
+                }
+            },
 
-        const [orders] = await connection.query(ordersQuery, ordersParams)
+            {
+                $unwind: "$orderRequests"
+            },
+
+            {
+                $match: {
+                    _id: new ObjectId(orderId),
+                    "orderRequests.executorId": new ObjectId(recipientId),
+                    authorId: new ObjectId(reviewAuthorId),
+                    "orderRequests.status": "ACCEPTED"
+                }
+            },
+
+            {
+                $project: {
+                    "_id": 1,
+                    "executorId": "$orderRequests.executorId"
+                }
+            }
+
+        ])
+        const orders = await mongo.toArray()
+        console.log(orders)
+        console.log(reviewAuthorId)
         if(!orders[0]) return false
 
-        const reviewQuery = `
-            SELECT * FROM reviews 
-            WHERE orderId = ? AND recipientId = ?
-        `
-        const reviewParams = [orderId, recipientId]
-        const [reviews] = await connection.query(reviewQuery, reviewParams)
+        const reviews = await reviewsRepository.find({orderId: new ObjectId(orderId), recipientId: recipientId}).toArray()
+        
         if(reviews.length > 0) {
             return false
         }
 
-        const newReviewQuery = `
-            INSERT INTO 
-                reviews (id, orderId, recipientId, authorId, mark, comment, date) 
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-        `
-        const newReviewParams = [v4(), orderId, recipientId, reviewAuthorId, mark, comment, dateTime]
-
-        const [newReview] = await connection.query(newReviewQuery, newReviewParams)
-        return (newReview.affectedRows > 0)
+        const newReview = await reviewsRepository.insertOne({
+            orderId: new ObjectId(orderId),
+            recipientId: new ObjectId(recipientId),
+            authorId: new ObjectId(reviewAuthorId),
+            mark: mark,
+            comment: comment,
+            date: dateTime
+        })
+        console.log(newReview)
+        
+        return newReview
     }
 
     async addReviewToAuthor(orderId: string, recipientId: string, reviewAuthorId: string, mark: number, comment: string) {
@@ -48,74 +69,80 @@ class ReviewsService {
         const timeOfPublishing = date.getHours() + ":" + date.getMinutes() + ":" + date.getSeconds();
         const dateTime = dateOfPublishing+ ' ' +timeOfPublishing
 
-        const ordersQuery = `
-            SELECT orders.id AS orderId, orders.authorId, requests.executorId
-            FROM orders
-            INNER JOIN requests
-            ON orders.id = requests.orderId
-            WHERE orders.id = ? AND orders.authorId = ? AND requests.executorId = ? AND requests.status = 'ACCEPTED'
-        `
-        const ordersParams = [orderId, recipientId, reviewAuthorId]
+        const mongo = await ordersRepository.aggregate([
+            {
+                $lookup: {
+                    from: "requests",
+                    localField: "_id",
+                    foreignField: "orderId",
+                    as: "orderRequests"
+                }
+            },
 
-        const [orders] = await connection.query(ordersQuery, ordersParams)
-        console.log(orders[0])
+            {
+                $unwind: "$orderRequests"
+            },
+
+            {
+                $match: {
+                    _id: new ObjectId(orderId),
+                    authorId: new ObjectId(recipientId),
+                    "orderRequests.executorId": new ObjectId(reviewAuthorId),
+                    "orderRequests.status": "ACCEPTED"
+                }
+            },
+
+            {
+                $project: {
+                    "-id": 1,
+                    "authorId": 1,
+                    "executorId": "$orderRequests.executorId"
+                }
+            }
+        ])
+        
+        const orders = await mongo.toArray()
+
+        console.log(orders)
         if(!orders[0]) return false
 
-        const reviewsQuery = `
-            SELECT * FROM reviews 
-            WHERE orderId = ? AND recipientId = ?
-        `
-        const reviewsParams = [orderId, recipientId]
-        const [reviews] = await connection.query(reviewsQuery, reviewsParams)
+        const reviews = await reviewsRepository.find({orderId: orderId, recipientId: recipientId}).toArray()
+        
         if(reviews.length > 0) {
             return false
         }
 
-        const newReviewQuery = `
-            INSERT INTO reviews 
-                (id, orderId, recipientId, authorId, mark, comment, date) 
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-        `
-        const newReviewParams = [v4(), orderId, recipientId, reviewAuthorId, mark, comment, dateTime]
-        const [newReview] = await connection.query(newReviewQuery, newReviewParams)
-        return (newReview.affectedRows > 0) 
+        const newReview = await reviewsRepository.insertOne({
+            orderId: new ObjectId(orderId),
+            recipientId: new ObjectId(recipientId),
+            authorId: new ObjectId(reviewAuthorId),
+            mark: mark,
+            comment: comment,
+            date: dateTime
+        })
+        
+        return newReview 
     }
 
     async deleteReview(reviewId: string, reviewAuthorId: string) {
-        const reviewExistsQuery = `
-            SELECT * FROM reviews 
-            WHERE id = ? AND authorId = ?
-        `
-        const reviewExistsParams = [reviewId, reviewAuthorId]
-        const [reviewExists] = await connection.query(reviewExistsQuery, reviewExistsParams)
-        console.log(reviewExists[0])
+        const reviewExists = await reviewsRepository.find({_id: new ObjectId(reviewId), authorId: new ObjectId(reviewAuthorId) }).toArray()
+        
+        console.log(reviewExists)
         if(!reviewExists[0]) return false
 
-        const query = `
-            DELETE FROM reviews 
-            WHERE id = ? AND authorId = ?
-        `
-        const params = [reviewId, reviewAuthorId]
-        const [review] = await connection.query(query, params)
+        const deletedReview = await reviewsRepository.deleteOne({_id: new ObjectId(reviewId), authorId: new ObjectId(reviewAuthorId)})
 
-        return (review.affectedRows > 0) 
+        return (deletedReview.deletedCount > 0) 
     }
 
     async getReviews() {
-        const [reviews] = await connection.query(`
-        SELECT * FROM reviews ORDER BY date DESC
-        `)
+        const reviews = await reviewsRepository.find().sort({ "date": -1 }).toArray()
+        
         return reviews;
     }
 
     async getUserReviews(userId: string) {
-        const query = `
-            SELECT * FROM reviews 
-            WHERE recipientId = ? 
-            ORDER BY date DESC
-        `
-        const params = [userId]
-        const [userReviews] = await connection.query(query, params)
+        const userReviews = await reviewsRepository.find({recipientId: new ObjectId(userId)}).sort({"date": -1}).toArray()
         return userReviews;
     }
 }

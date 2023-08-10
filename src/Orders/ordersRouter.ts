@@ -41,7 +41,7 @@ router.delete('/', auth(), validation(deleteOrderSchema), async (req, res) => {
     try{
         const { orderId } = req.body as any
         const order = await ordersService.checkUsersOrder(orderId, req.userId)
-        if(order === true) {
+        if(order) {
             await ordersService.deleteOrder(orderId);
             res.send('The order was deleted!')
         } else {
